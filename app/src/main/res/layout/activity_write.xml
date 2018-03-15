@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:fab="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/parent"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <com.stroke.view.InkCanvas
+        android:id="@+id/inkCanvas"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent" />
+
+    <com.github.clans.fab.FloatingActionMenu
+        android:id="@+id/menu"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_alignParentBottom="true"
+        android:layout_alignParentRight="true"
+        android:layout_marginRight="15dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="10dp"
+        android:layout_marginTop="10dp"
+        fab:menu_icon="@mipmap/ic_star"
+        fab:menu_animationDelayPerItem="0"
+        fab:menu_colorNormal="#1565C0"
+        fab:menu_colorPressed="#2272CD"
+        fab:menu_colorRipple="#62B2FF"
+        fab:menu_labels_maxLines="2"
+        fab:menu_labels_ellipsize="end">
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_pen_style"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/pen"
+            fab:fab_label="@string/btn_type"
+            style="@style/MenuButtonsSmall" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_pen_color"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/color"
+            fab:fab_label="@string/btn_color"
+            style="@style/MenuButtonsSmall" />
+
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_rubber"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/rubber"
+            fab:fab_label="@string/btn_eraser"
+            style="@style/MenuButtonsSmall" />
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_clean"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/clear"
+            fab:fab_label="@string/btn_clean"
+            style="@style/MenuButtonsSmall" />
+        <com.github.clans.fab.FloatingActionButton
+            android:id="@+id/fab_save_pic"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:src="@mipmap/save"
+            fab:fab_label="@string/btn_save_image"
+            style="@style/MenuButtonsSmall" />
+    </com.github.clans.fab.FloatingActionMenu>
+</RelativeLayout>

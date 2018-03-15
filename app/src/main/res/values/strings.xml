@@ -1,0 +1,60 @@
+<resources xmlns:android="http://schemas.android.com/tools">
+    <string name="app_name">东向投屏</string>
+    <string name="action_settings">Settings</string>
+    <string name="hello_world">Hello world!</string>
+
+    <string name="main_menu_color">#303F9F</string>
+    <!--setting-->
+    <string name="setting_user_name">姓名</string>
+    <string name="setting_screen_size">分辨率</string>
+    <string name="setting_bitrate">比特率</string>
+    <string name="setting_fps">帧率</string>
+
+
+    <!--手写板-->
+    <string name="pen_render_sharp">笔锋</string>
+    <string name="pen_render_round">普通</string>
+
+    <string name="pen_type_pencil">铅笔</string>
+    <string name="pen_type_ballpoint">圆珠笔</string>
+    <string name="pen_type_pen">钢笔</string>
+    <string name="pen_type_brush">毛笔</string>
+    <string name="pen_type_fountain">水笔</string>
+
+    <string name="btn_type">笔型</string>
+    <string name="btn_color">颜色</string>
+    <string name="btn_eraser">橡皮</string>
+    <string name="in_rubber_mode">橡皮模式中</string>
+    <string name="btn_clean">清除</string>
+    <string name="btn_reverse">回退</string>
+    <string name="btn_insert_image">插入图片</string>
+    <string name="btn_insert_text">插入文本</string>
+    <string name="btn_save_image">存图</string>
+    <string name="btn_save_data">保存</string>
+    <string name="btn_sync_board">手写板</string>
+    <string name="btn_back">回退</string>
+    <string name="btn_forward">前进</string>
+    <string name="btn_render">渲染模式</string>
+
+    <string name="pen_color_orange">橘黄</string>
+    <string name="pen_color_red">红</string>
+    <string name="pen_color_yellow">黄</string>
+    <string name="pen_color_black">黑</string>
+    <string name="pen_color_blue">蓝</string>
+
+    <color name="pen_color_orange">#FF6600</color>
+    <color name="pen_color_red">#CC0000</color>
+    <color name="pen_color_yellow">#FFCC00</color>
+    <color name="pen_color_black">#000000</color>
+    <color name="pen_color_blue">#0000FF</color>
+
+    <!--录屏-->
+    <string name="service_ready_to_stream">录屏准备就绪</string>
+    <string name="service_press_start">点击开始按钮开始</string>
+    <string name="service_start">开始</string>
+    <string name="service_stop">停止</string>
+    <string name="service_exit">退出</string>
+    <string name="service_stream">录屏中</string>
+    <string name="service_press_stop">点击按钮停止录屏</string>
+
+</resources>

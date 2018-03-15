@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string-array name="pen_type">
+        <item>@string/pen_type_pencil</item>
+        <item>@string/pen_type_ballpoint</item>
+        <item>@string/pen_type_pen</item>
+        <item>@string/pen_type_fountain</item>
+        <item>@string/pen_type_brush</item>
+    </string-array>
+
+    <string-array name="pen_color_name">
+        <item>@string/pen_color_orange</item>
+        <item>@string/pen_color_red</item>
+        <item>@string/pen_color_yellow</item>
+        <item>@string/pen_color_black</item>
+        <item>@string/pen_color_blue</item>
+    </string-array>
+
+    <array name="pen_color">
+        <item>@color/pen_color_orange</item>
+        <item>@color/pen_color_red</item>
+        <item>@color/pen_color_yellow</item>
+        <item>@color/pen_color_black</item>
+        <item>@color/pen_color_blue</item>
+    </array>
+    <array name="button_name">
+
+        <item>@string/btn_type</item>
+        <item>@string/btn_color</item>
+        <item>@string/btn_eraser</item>
+        <item>@string/btn_clean</item>
+        <item>@string/btn_sync_board</item>
+        <item>@string/btn_save_image</item>
+        <item>@string/btn_save_data</item>
+        <item>@string/btn_back</item>
+        <item>@string/btn_forward</item>
+        <!--<item>@string/btn_render</item>-->
+    </array>
+
+    <array name="pen_render">
+        <item>@string/pen_render_sharp</item>
+        <item>@string/pen_render_round</item>
+
+    </array>
+
+
+    <!--screen size-->
+    <string-array name="screen_size">
+        <item>1920×1080</item>
+        <item>1280×720</item>
+        <item>960×540</item>
+        <item>640×360</item>
+    </string-array>
+
+    <!--bitrate-->
+    <string-array name="bitrate">
+        <item>1 Mbps</item>
+        <item>2 Mbps</item>
+        <item>4 Mbps</item>
+        <item>6 Mbps</item>
+    </string-array>
+
+    <!--fps-->
+    <string-array name="fps">
+        <item>15</item>
+        <item>30</item>
+        <item>60</item>
+    </string-array>
+</resources>

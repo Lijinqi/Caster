@@ -1,0 +1,127 @@
+<?xml version="1.0" encoding="utf-8"?>
+<ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent">
+    <RelativeLayout
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        xmlns:app="http://schemas.android.com/apk/res-auto"
+        android:background="@color/whitesmoke">
+        <android.support.v7.widget.CardView
+            android:id="@+id/ll_user"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="10dp"
+            android:layout_marginBottom="10dp"
+
+            app:cardCornerRadius="0dp"
+            app:cardElevation="2dp"
+            android:onClick="onClick">
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:padding="10dp"
+                android:background="@color/white">
+                <de.hdodenhof.circleimageview.CircleImageView
+                    android:id="@+id/iv_head_icon"
+                    android:layout_width="80dp"
+                    android:layout_height="80dp"
+                    android:src="@mipmap/ic_launcher_round"/>
+                <TextView
+                    android:id="@+id/tv_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:layout_gravity="center_vertical"
+                    android:drawableRight="@mipmap/ic_right"
+                    android:layout_marginLeft="10dp"
+                    android:textSize="@dimen/setting_text_size"
+                    android:textColor="@color/slategray"
+                    android:text="@string/setting_user_name"/>
+            </LinearLayout>
+
+        </android.support.v7.widget.CardView>
+
+
+        <LinearLayout
+            android:id="@+id/ll_size"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/ll_user"
+            android:layout_marginTop="10dp"
+            android:padding="10dp"
+            android:background="@color/white"
+            android:onClick="onClick">
+            <TextView
+                android:id="@+id/tv_size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/setting_screen_size"
+
+                android:textColor="@color/slategray"
+                android:drawableRight="@mipmap/ic_right"/>
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_size_selected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="size"
+            android:layout_below="@+id/ll_size"/>
+
+        <LinearLayout
+            android:id="@+id/ll_bitrate"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_size_selected"
+            android:layout_marginTop="10dp"
+            android:padding="10dp"
+            android:background="@color/white"
+            android:onClick="onClick">
+            <TextView
+                android:id="@+id/tv_bitrate"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/setting_bitrate"
+                android:textColor="@color/slategray"
+                android:drawableRight="@mipmap/ic_right"/>
+        </LinearLayout>
+        <TextView
+            android:id="@+id/tv_bitrate_selected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="bitrate"
+            android:layout_below="@+id/ll_bitrate"/>
+
+        <LinearLayout
+            android:id="@+id/ll_fps"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_bitrate_selected"
+            android:layout_marginTop="10dp"
+            android:padding="10dp"
+            android:background="@color/white"
+            android:onClick="onClick">
+            <TextView
+                android:id="@+id/tv_fps"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/setting_fps"
+                android:textColor="@color/slategray"
+                android:drawableRight="@mipmap/ic_right"/>
+        </LinearLayout>
+        <TextView
+            android:id="@+id/tv_fps_selected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="fps"
+            android:layout_below="@+id/ll_fps"/>
+    </RelativeLayout>
+</ScrollView>
+

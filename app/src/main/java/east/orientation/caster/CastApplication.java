@@ -49,7 +49,7 @@ public class CastApplication extends Application {
     }
 
     public void AppExit(){
-        // 发送登出请求
+        // 发送登出服务器请求
         getAppInfo().getConnectionManager().send(new LogoutRequest());
         // 发送关闭大屏显示请求
         getAppInfo().getConnectionManager().send(new StopCastRequest());

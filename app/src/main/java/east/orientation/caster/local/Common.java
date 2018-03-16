@@ -17,11 +17,16 @@ public class Common  {
     public static final String HEAD = "Ornt";// 包头
     public static final String TAIL = "Tech";// 包尾
 
+    // 登录类型
+    public static final char LOGIN_TYPE_TEACHER = 'T';
+    public static final char LOGIN_TYPE_ADMIN = 'A';
+    public static final char LOGIN_TYPE_STUDENT = 'S';
+
     public static final int FLAG_LOGIN = 0x1001;// 登录
     public static final int FLAG_LOGIN_RESPONSE = 0x1002;//登录回执
     public static final int FLAG_LOGOUT = 0x1003;// 登出
-    public static final int FLAG_HEART = 0x1004;// 心跳
-    public static final int FLAG_HEART_RESPONSE = 0x1005;// 心跳回执
+    public static final int FLAG_HEART_BEAT = 0x1004;// 心跳
+    public static final int FLAG_HEART_BEAT_RESPONSE = 0x1005;// 心跳回执
 
     public static final int FLAG_RESET = 0x2001;// 恢复初始状态
     public static final int FLAG_START_CAST = 0x2003;// 开启投屏

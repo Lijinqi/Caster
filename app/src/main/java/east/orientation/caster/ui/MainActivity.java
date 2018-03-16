@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.support.constraint.ConstraintLayout;
-import android.support.design.widget.Snackbar;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -13,6 +12,7 @@ import android.view.View;
 import android.widget.ImageView;
 
 import com.xuhao.android.libsocket.sdk.ConnectionInfo;
+import com.xuhao.android.libsocket.sdk.OkSocket;
 import com.xuhao.android.libsocket.sdk.OkSocketOptions;
 import com.xuhao.android.libsocket.sdk.SocketActionAdapter;
 import com.xuhao.android.libsocket.sdk.bean.IPulseSendable;
@@ -25,7 +25,6 @@ import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
 import java.nio.ByteOrder;
-import java.nio.charset.Charset;
 
 import east.orientation.caster.R;
 import east.orientation.caster.cast.CastScreenService;
@@ -33,6 +32,7 @@ import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.protocol.NormalHeaderProtocol;
 import east.orientation.caster.request.LoginRequest;
+import east.orientation.caster.request.Pluse;
 import east.orientation.caster.request.StartCastRequest;
 import east.orientation.caster.util.ToastUtil;
 
@@ -86,8 +86,10 @@ public class MainActivity extends AppCompatActivity{
             super.onSocketConnectionSuccess(context, info, action);
             // 设置连接状态
             getAppInfo().setServerConnected(true);
+            // 连接成功则发送心跳
+            getAppInfo().getConnectionManager().getPulseManager().setPulseSendable(new Pluse(1)).pulse();
             // 连接成功则发送登陆请求
-            getAppInfo().getConnectionManager().send(new LoginRequest());
+            getAppInfo().getConnectionManager().send(new LoginRequest(Common.LOGIN_TYPE_TEACHER));
             Log.e(TAG,"连接成功");
         }
 
@@ -102,7 +104,6 @@ public class MainActivity extends AppCompatActivity{
             super.onSocketReadResponse(context, info, action, data);
             // TODO 处理回执
             handleResponse(data);
-
         }
 
         @Override
@@ -113,11 +114,9 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onPulseSend(Context context, ConnectionInfo info, IPulseSendable data) {
             super.onPulseSend(context, info, data);
+            Log.e(TAG,"心跳已发送");
         }
     };
-
-
-
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -136,12 +135,13 @@ public class MainActivity extends AppCompatActivity{
         mConnectionInfo = new ConnectionInfo("192.168.0.101", 8888);
 
         mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
-                .setSinglePackageBytes(1024)
-                .setBackgroundLiveMinute(-1)// 后台久活
-                .setHeaderProtocol(new NormalHeaderProtocol())
-                .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)
+                .setSinglePackageBytes(1024)// 设置每个包的长度
+                .setBackgroundLiveMinute(-1)// 设置后台久活
+                .setHeaderProtocol(new NormalHeaderProtocol())// 设置自定义包头
+                .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
+                .setPulseFrequency(3000)// 设置心跳间隔/毫秒
                 .build();
-        getAppInfo().setConnectionManager(open(mConnectionInfo, mOkOptions));
+        getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo, mOkOptions));
 
         if (getAppInfo().getConnectionManager() == null) {
             return;
@@ -176,7 +176,7 @@ public class MainActivity extends AppCompatActivity{
         // 标志
         int flag = BytesUtils.bytesToInt(header,8);
 
-        boolean isOk = BytesUtils.bytesToInt(body,0)==1;
+        boolean isOk = BytesUtils.bytesToInt(body,0) == 1;
         switch (flag){
             case Common.FLAG_LOGIN_RESPONSE:// 登录回执
                 if (isOk) {
@@ -187,8 +187,10 @@ public class MainActivity extends AppCompatActivity{
 
                 }
                 break;
-            case Common.FLAG_HEART_RESPONSE:// 心跳回执
-
+            case Common.FLAG_HEART_BEAT_RESPONSE:// 心跳回执
+                // 收到心跳则喂狗
+                Log.e(TAG,"收到心跳回执");
+                getAppInfo().getConnectionManager().getPulseManager().feed();
                 break;
 
             default:

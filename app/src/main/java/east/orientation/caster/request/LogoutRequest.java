@@ -4,6 +4,10 @@ import east.orientation.caster.local.Common;
 
 /**
  * Created by ljq on 2018/3/16.
+ *
+ * 登出
+ *
+ * data:无携带数据
  */
 
 public class LogoutRequest extends BaseRequest {

@@ -31,13 +31,14 @@ public abstract class BaseRequest implements ISendable{
                 ByteBuffer bb = ByteBuffer.allocate(12 + data.length);
                 bb.order(ByteOrder.BIG_ENDIAN);
                 // 加入长度
-                bb.putInt(12+data.length);
+                bb.put(BytesUtils.intToBytes(8+data.length));
                 // 加入head
                 bb.put(head.getBytes());
                 // 加入flag
                 bb.put(BytesUtils.intToBytes(flag));
                 // 加入data
                 bb.put(data);
+
                 return bb.array();
             }
         } catch (Exception e) {

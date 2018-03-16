@@ -8,26 +8,25 @@ public class Common  {
     /**********************************************************/
     /**手写板相关常量**/
     /**********************************************************/
-    public static String SAVE_DIR_NAME = "Caster";
+    public static final String SAVE_DIR_NAME = "Caster";
 
 
     /**********************************************************/
     /**接口格式相关常量**/
     /**********************************************************/
-    public static String HEAD = "Ornt";// 包头
-    public static String TAIL = "Tech";// 包尾
+    public static final String HEAD = "Ornt";// 包头
+    public static final String TAIL = "Tech";// 包尾
 
-    public static int FLAG_LOGIN = 0x1001;// 登录
-    public static int FLAG_LOGOUT = 0x1002;// 登出
-    public static int FLAG_HEART = 0x1003;// 心跳
-    public static int FLAG_HEART_RESPONSE = 0x1004;// 心跳回执
-    public static int FLAG_SET_CLASS_PWD = 0x1005;// 设置听课密码
+    public static final int FLAG_LOGIN = 0x1001;// 登录
+    public static final int FLAG_LOGIN_RESPONSE = 0x1002;//登录回执
+    public static final int FLAG_LOGOUT = 0x1003;// 登出
+    public static final int FLAG_HEART = 0x1004;// 心跳
+    public static final int FLAG_HEART_RESPONSE = 0x1005;// 心跳回执
 
-    public static int FLAG_RESET = 0x2001;// 恢复初始状态
-    public static int FLAG_THEME = 0x2002;// 设置主题信息
-    public static int FLAG_START_CAST = 0x2003;// 开启投屏
-    public static int FLAG_STOP_CAST = 0x2004;// 关闭投屏
-    public static int FLAG_CAST_STREAM = 0x2005;// 帧数据流
+    public static final int FLAG_RESET = 0x2001;// 恢复初始状态
+    public static final int FLAG_START_CAST = 0x2003;// 开启投屏
+    public static final int FLAG_STOP_CAST = 0x2004;// 关闭投屏
+    public static final int FLAG_CAST_STREAM = 0x2005;// 帧数据流
 
     /**********************************************************/
     /**录屏相关常量**/

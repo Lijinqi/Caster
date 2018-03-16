@@ -13,6 +13,8 @@ import java.util.List;
 import east.orientation.caster.cast.CastScreenService;
 import east.orientation.caster.local.AppInfo;
 import east.orientation.caster.local.lifecycle.MobclickAgent;
+import east.orientation.caster.request.LogoutRequest;
+import east.orientation.caster.request.StopCastRequest;
 
 /**
  * Created by ljq on 2018/3/6.
@@ -47,6 +49,10 @@ public class CastApplication extends Application {
     }
 
     public void AppExit(){
+        // 发送登出请求
+        getAppInfo().getConnectionManager().send(new LogoutRequest());
+        // 发送关闭大屏显示请求
+        getAppInfo().getConnectionManager().send(new StopCastRequest());
         MobclickAgent.exit();
     }
 }

@@ -18,17 +18,26 @@ import com.xuhao.android.libsocket.sdk.SocketActionAdapter;
 import com.xuhao.android.libsocket.sdk.bean.IPulseSendable;
 import com.xuhao.android.libsocket.sdk.bean.ISendable;
 import com.xuhao.android.libsocket.sdk.bean.OriginalData;
+import com.xuhao.android.libsocket.utils.BytesUtils;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.nio.ByteOrder;
+import java.nio.charset.Charset;
+
 import east.orientation.caster.R;
 import east.orientation.caster.cast.CastScreenService;
 import east.orientation.caster.evevtbus.CastMessage;
+import east.orientation.caster.local.Common;
+import east.orientation.caster.protocol.NormalHeaderProtocol;
+import east.orientation.caster.request.LoginRequest;
+import east.orientation.caster.request.StartCastRequest;
 import east.orientation.caster.util.ToastUtil;
 
 import static com.xuhao.android.libsocket.sdk.OkSocket.open;
+import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
 import static east.orientation.caster.cast.CastScreenService.getProjectionManager;
 import static east.orientation.caster.cast.CastScreenService.setMediaProjection;
@@ -67,6 +76,7 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketDisconnection(Context context, ConnectionInfo info, String action, Exception e) {
             super.onSocketDisconnection(context, info, action, e);
+            // 设置连接状态
             getAppInfo().setServerConnected(false);
             Log.e(TAG,"断开连接");
         }
@@ -74,8 +84,10 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketConnectionSuccess(Context context, ConnectionInfo info, String action) {
             super.onSocketConnectionSuccess(context, info, action);
+            // 设置连接状态
             getAppInfo().setServerConnected(true);
-
+            // 连接成功则发送登陆请求
+            getAppInfo().getConnectionManager().send(new LoginRequest());
             Log.e(TAG,"连接成功");
         }
 
@@ -88,6 +100,9 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketReadResponse(Context context, ConnectionInfo info, String action, OriginalData data) {
             super.onSocketReadResponse(context, info, action, data);
+            // TODO 处理回执
+            handleResponse(data);
+
         }
 
         @Override
@@ -100,6 +115,8 @@ public class MainActivity extends AppCompatActivity{
             super.onPulseSend(context, info, data);
         }
     };
+
+
 
 
     @Override
@@ -116,11 +133,13 @@ public class MainActivity extends AppCompatActivity{
      * 初始化
      */
     private void init() {
-        mConnectionInfo = new ConnectionInfo("192.168.0.101", 28888);
+        mConnectionInfo = new ConnectionInfo("192.168.0.101", 8888);
 
         mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
                 .setSinglePackageBytes(1024)
                 .setBackgroundLiveMinute(-1)// 后台久活
+                .setHeaderProtocol(new NormalHeaderProtocol())
+                .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)
                 .build();
         getAppInfo().setConnectionManager(open(mConnectionInfo, mOkOptions));
 
@@ -132,6 +151,48 @@ public class MainActivity extends AppCompatActivity{
 
         if (!getAppInfo().getConnectionManager().isConnect()) {
             getAppInfo().getConnectionManager().connect();
+        }
+    }
+
+    /**
+     *  处理服务端回复的数据
+     *
+     *  @param data  服务端回复的数据
+     *
+     *  data包括：
+     *  header：len (长度)+ (Ornt 协议包头 4)+ flag(标志 4)
+     *  长度为 8+body.length
+     *
+     *  body  ：携带的数据
+     *  {@link NormalHeaderProtocol}
+     */
+    private void handleResponse(OriginalData data) {
+        // 包头
+        byte[] header = data.getHeadBytes();
+        // 包体
+        byte[] body = data.getBodyBytes();
+        // 长度
+        int len = BytesUtils.bytesToInt(header,0);
+        // 标志
+        int flag = BytesUtils.bytesToInt(header,8);
+
+        boolean isOk = BytesUtils.bytesToInt(body,0)==1;
+        switch (flag){
+            case Common.FLAG_LOGIN_RESPONSE:// 登录回执
+                if (isOk) {
+                    // 登录成功 则启动
+                    getAppInfo().getConnectionManager().send(new StartCastRequest());
+                } else{
+                    // 登陆失败
+
+                }
+                break;
+            case Common.FLAG_HEART_RESPONSE:// 心跳回执
+
+                break;
+
+            default:
+                break;
         }
     }
 
@@ -164,7 +225,7 @@ public class MainActivity extends AppCompatActivity{
                 ToastUtil.show(this,"开发ing !");
                 break;
             case R.id.btn_exit:// 退出
-                System.exit(0);
+                getAppContext().AppExit();
                 break;
         }
     }

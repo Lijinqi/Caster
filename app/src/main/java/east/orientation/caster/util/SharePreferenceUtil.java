@@ -85,6 +85,38 @@ public class SharePreferenceUtil {
         return null;
     }
 
+    public static int get(Context context, String key, int defaultObject){
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+
+        return sp.getInt(key,defaultObject);
+    }
+
+    public static String get(Context context, String key, String defaultObject){
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+
+        return sp.getString(key,defaultObject);
+    }
+
+    public static float get(Context context, String key, Float defaultObject){
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+
+        return sp.getFloat(key,defaultObject);
+    }
+
+    public static boolean get(Context context, String key, boolean defaultObject){
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+
+        return sp.getBoolean(key,defaultObject);
+    }
+
+    public static long get(Context context, String key, long defaultObject){
+        SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
+
+        return sp.getLong(key,defaultObject);
+    }
+
+
+
     /**
      * 移除某个key值已经对应的值
      */

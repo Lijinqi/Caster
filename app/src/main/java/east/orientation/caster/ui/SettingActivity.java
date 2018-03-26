@@ -9,6 +9,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ImageView;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -16,6 +17,7 @@ import com.stroke.Stroke;
 
 import org.w3c.dom.Text;
 
+import de.hdodenhof.circleimageview.CircleImageView;
 import east.orientation.caster.R;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.util.SharePreferenceUtil;
@@ -28,6 +30,7 @@ import static com.xuhao.android.libsocket.sdk.OkSocket.open;
  */
 
 public class SettingActivity extends AppCompatActivity {
+    private CircleImageView mCivHead;// 头像
     private TextView mTextName;//姓名
     private TextView mTextSize;//分辨率
     private TextView mTextBitrate;// 比特率
@@ -46,18 +49,23 @@ public class SettingActivity extends AppCompatActivity {
      * 设置默认配置
      */
     private void init() {
+        mCivHead = findViewById(R.id.iv_head_icon);
         mTextName = findViewById(R.id.tv_name);
         mTextSize = findViewById(R.id.tv_size_selected);
         mTextBitrate = findViewById(R.id.tv_bitrate_selected);
         mTextFps = findViewById(R.id.tv_fps_selected);
+        // 设置默认头像
+        mCivHead.setImageResource(R.drawable.ic_launcher_background);
+        mCivHead.setDisableCircularTransformation(false);
+
         // 设置姓名
-        mTextName.setText((CharSequence) SharePreferenceUtil.get(getApplicationContext(),Common.KEY_NAME,"姓名"));
+        mTextName.setText(SharePreferenceUtil.get(getApplicationContext(),Common.KEY_NAME,"姓名"));
         // 设置分辨率
-        mTextSize.setText(getResources().getStringArray(R.array.screen_size)[(int) SharePreferenceUtil.get(getApplicationContext(),Common.KEY_SIZE,0)]);
+        mTextSize.setText(getResources().getStringArray(R.array.screen_size)[SharePreferenceUtil.get(getApplicationContext(),Common.KEY_SIZE,0)]);
         // 设置比特率
-        mTextBitrate.setText(getResources().getStringArray(R.array.bitrate)[(int) SharePreferenceUtil.get(getApplicationContext(),Common.KEY_BITRATE,0)]);
+        mTextBitrate.setText(getResources().getStringArray(R.array.bitrate)[SharePreferenceUtil.get(getApplicationContext(),Common.KEY_BITRATE,0)]);
         // 设置fps
-        mTextFps.setText(getResources().getStringArray(R.array.fps)[(int) SharePreferenceUtil.get(getApplicationContext(),Common.KEY_FPS,0)]);
+        mTextFps.setText(getResources().getStringArray(R.array.fps)[SharePreferenceUtil.get(getApplicationContext(),Common.KEY_FPS,0)]);
     }
 
     public void onClick(View v){

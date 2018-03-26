@@ -4,6 +4,8 @@ import android.content.Context;
 import android.content.Intent;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
+import android.os.Handler;
+import android.os.Looper;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -35,6 +37,7 @@ import east.orientation.caster.request.LoginRequest;
 import east.orientation.caster.request.Pluse;
 import east.orientation.caster.request.StartCastRequest;
 import east.orientation.caster.util.ToastUtil;
+import east.orientation.caster.view.WindowFloatManager;
 
 import static com.xuhao.android.libsocket.sdk.OkSocket.open;
 import static east.orientation.caster.CastApplication.getAppContext;
@@ -52,6 +55,7 @@ import static east.orientation.caster.local.Common.REQUEST_CODE_SCREEN_CAPTURE;
 public class MainActivity extends AppCompatActivity{
     private static final String TAG = "MainActivity";
 
+    private Handler mHandler;
     private ConstraintLayout mContent;
     private ImageView mIvTheme;
 
@@ -102,13 +106,14 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketReadResponse(Context context, ConnectionInfo info, String action, OriginalData data) {
             super.onSocketReadResponse(context, info, action, data);
-            // TODO 处理回执
+            // 处理回执
             handleResponse(data);
         }
 
         @Override
         public void onSocketWriteResponse(Context context, ConnectionInfo info, String action, ISendable data) {
             super.onSocketWriteResponse(context, info, action, data);
+            Log.e(TAG,"发送 ："+data.parse().length);
         }
 
         @Override
@@ -124,6 +129,16 @@ public class MainActivity extends AppCompatActivity{
         setContentView(R.layout.activity_main);
         mContent = findViewById(R.id.content);
         mIvTheme = findViewById(R.id.iv_theme);
+
+//        mHandler = new Handler(Looper.getMainLooper());
+//        // 显示悬浮框
+//        mHandler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                WindowFloatManager.getInstance().showFloatButton();
+//            }
+//        },2000);
+
         // 初始化
         init();
     }
@@ -132,10 +147,10 @@ public class MainActivity extends AppCompatActivity{
      * 初始化
      */
     private void init() {
-        mConnectionInfo = new ConnectionInfo("192.168.0.101", 8888);
+        mConnectionInfo = new ConnectionInfo("192.168.0.100", 8888);
 
         mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
-                .setSinglePackageBytes(1024)// 设置每个包的长度
+                .setSinglePackageBytes(1024*7)// 设置每个包的长度
                 .setBackgroundLiveMinute(-1)// 设置后台久活
                 .setHeaderProtocol(new NormalHeaderProtocol())// 设置自定义包头
                 .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后

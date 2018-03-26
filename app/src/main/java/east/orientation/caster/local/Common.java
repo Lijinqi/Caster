@@ -39,8 +39,8 @@ public class Common  {
     public static final int REQUEST_CODE_SCREEN_CAPTURE = 1;
     public static final int VIEWER_PORT = 28888;
     public static final int DEFAULT_SCREEN_WIDTH = 960;
-    public static final int DEFAULT_SCREEN_HEIGHT = 640;
-    public static final int DEFAULT_SCREEN_DPI = 160;
+    public static final int DEFAULT_SCREEN_HEIGHT = 540;
+    public static final int DEFAULT_SCREEN_DPI = 1;
     public static final int DEFAULT_VIDEO_BITRATE = 800*1024;
     public static final int DEFAULT_VIDEO_FPS = 30;
     public static final int DEFAULT_I_FRAME_INTERVAL = 1;//1 seconds between I-frames
@@ -83,8 +83,21 @@ public class Common  {
     /**********************************************************/
     /**SharePreference存储相关常量**/
     /**********************************************************/
+
+    // 投屏相关
     public static final String KEY_NAME = "key_name";
     public static final String KEY_SIZE = "key_size";
     public static final String KEY_BITRATE = "key_bitrate";
     public static final String KEY_FPS = "key_fps";
+
+    // 悬浮球相关
+    public static final String FLOAT_VIEW_SIZE = "float_view_size";
+    public static final String FLOAT_VIEW_PORT_X = "float_view_port_x";
+    public static final String FLOAT_VIEW_PORT_Y = "float_view_port_y";
+    public static final String FLOAT_VIEW_LAND_X = "float_view_land_x";
+    public static final String FLOAT_VIEW_LAND_Y = "float_view_land_y";
+    public static final String TOTAL_SWITCH = "total_switch";
+    public static final String FLOAT_VIEW_IS_STICK = "float_view_is_stick";
+    public static final String FLOAT_VIEW_ALPHA = "float_view_alpha";
+    public static final String SHOW_FLOAT_VIEW = "show_float_view";
 }

@@ -1,6 +1,8 @@
 package east.orientation.caster.cast;
 
 import android.annotation.TargetApi;
+import android.content.Context;
+import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
@@ -9,6 +11,7 @@ import android.media.projection.MediaProjection;
 import android.os.Build;
 import android.os.HandlerThread;
 import android.util.Log;
+import android.view.Display;
 import android.view.Surface;
 
 import java.io.IOException;
@@ -19,6 +22,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.request.CastRequest;
 import east.orientation.caster.util.SharePreferenceUtil;
+import east.orientation.caster.util.ToastUtil;
 
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
@@ -63,9 +67,9 @@ public class CastGenerator {
     public void start(){
         mediaProjection = CastScreenService.getMediaProjection();
 
-        mIndexSize = (int) SharePreferenceUtil.get(getAppContext(),Common.KEY_SIZE,0);
-        mIndexBitrate = (int) SharePreferenceUtil.get(getAppContext(),Common.KEY_BITRATE,0);
-        mIndexFps = (int) SharePreferenceUtil.get(getAppContext(),Common.KEY_FPS,0);
+        mIndexSize = SharePreferenceUtil.get(getAppContext(),Common.KEY_SIZE,0);
+        mIndexBitrate = SharePreferenceUtil.get(getAppContext(),Common.KEY_BITRATE,0);
+        mIndexFps = SharePreferenceUtil.get(getAppContext(),Common.KEY_FPS,0);
 
 
         if(mediaProjection == null){
@@ -145,8 +149,9 @@ public class CastGenerator {
             Log.e(TAG, "Failed to initial mMediaCodec, e: " + e);
             stop();
         }
-        mVirtualDisplay = mediaProjection.createVirtualDisplay("Recording Display", Common.DEFAULT_SCREEN_WIDTH,
-               Common.DEFAULT_SCREEN_HEIGHT, Common.DEFAULT_SCREEN_DPI, 0, mInputSurface, null, null);
+
+        mVirtualDisplay = mediaProjection.createVirtualDisplay("Recording Display", Common.RESOLUTION_OPTIONS[0][mIndexSize],
+                Common.RESOLUTION_OPTIONS[1][mIndexSize], Common.DEFAULT_SCREEN_DPI, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC, mInputSurface, null, null);
 
     }
 

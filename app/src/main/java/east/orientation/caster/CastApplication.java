@@ -34,10 +34,10 @@ public class CastApplication extends Application {
     public void onCreate() {
         super.onCreate();
         sAppInstance = this;
-        // activity管理初始化
-        MobclickAgent.init(this);
         // 初始化OkSocket
         OkSocket.initialize(this);
+        // activity管理初始化
+        MobclickAgent.init(this);
         // 初始化AppInfo
         sAppInfo = new AppInfo(this);
         // 开启投屏服务
@@ -49,10 +49,12 @@ public class CastApplication extends Application {
     }
 
     public void AppExit(){
-        // 发送登出服务器请求
-        getAppInfo().getConnectionManager().send(new LogoutRequest());
-        // 发送关闭大屏显示请求
-        getAppInfo().getConnectionManager().send(new StopCastRequest());
+        if (sAppInfo.getConnectionManager() != null){
+            // 发送登出服务器请求
+            sAppInfo.getConnectionManager().send(new LogoutRequest());
+            // 发送关闭大屏显示请求
+            sAppInfo.getConnectionManager().send(new StopCastRequest());
+        }
         MobclickAgent.exit();
     }
 }

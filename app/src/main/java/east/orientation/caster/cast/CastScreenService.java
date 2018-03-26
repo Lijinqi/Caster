@@ -13,6 +13,7 @@ import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.wifi.WifiManager;
 import android.os.Build;
+import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
@@ -21,14 +22,6 @@ import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
 import android.util.Log;
 import android.widget.RemoteViews;
-
-import com.xuhao.android.libsocket.sdk.ConnectionInfo;
-import com.xuhao.android.libsocket.sdk.OkSocket;
-import com.xuhao.android.libsocket.sdk.OkSocketOptions;
-import com.xuhao.android.libsocket.sdk.SocketActionAdapter;
-import com.xuhao.android.libsocket.sdk.bean.IPulseSendable;
-import com.xuhao.android.libsocket.sdk.bean.ISendable;
-import com.xuhao.android.libsocket.sdk.bean.OriginalData;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
@@ -40,9 +33,9 @@ import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.ui.MainActivity;
 import east.orientation.caster.util.ToastUtil;
+import east.orientation.caster.view.WindowFloatManager;
 
 import static android.content.Intent.ACTION_SCREEN_OFF;
-import static android.net.wifi.WifiManager.NETWORK_STATE_CHANGED_ACTION;
 import static android.net.wifi.WifiManager.WIFI_STATE_CHANGED_ACTION;
 import static com.xuhao.android.libsocket.sdk.OkSocket.open;
 import static east.orientation.caster.CastApplication.getAppInfo;
@@ -74,6 +67,8 @@ public class CastScreenService extends Service {
 
     private MediaProjection.Callback mProjectionCallback;
 
+    private Handler mHandler;
+
     private HandlerThread mHandlerThread;
 
     private BroadcastReceiver mLocalNotificationReceiver;
@@ -98,6 +93,7 @@ public class CastScreenService extends Service {
         Log.e(TAG, "录屏服务启动");
         sServiceInstance = this;
         mAppContext = getApplicationContext();
+        mHandler = new Handler(Looper.getMainLooper());
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(Common.NOTIFICATION_CHANNEL_ID, "cast service", NotificationManager.IMPORTANCE_HIGH);
@@ -156,6 +152,7 @@ public class CastScreenService extends Service {
                     case Common.ACTION_EXIT:
                         Log.d(TAG, "exit app");
                         stopService();
+                        CastApplication.getAppContext().AppExit();
 
                         break;
                 }
@@ -211,6 +208,17 @@ public class CastScreenService extends Service {
             }
         };
         registerReceiver(mBroadcastReceiver, screenOnOffAndWiFiFilter);
+
+        // 显示悬浮框
+        mHandler.postDelayed(new Runnable() {
+            @Override
+            public void run() {
+                //WindowFloatManager.getInstance().showTipView();
+                WindowFloatManager.getInstance().setResourse(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
+                WindowFloatManager.getInstance().showFloatMenus();
+            }
+        },1000);
+
 
         EventBus.getDefault().register(this);
     }
@@ -390,6 +398,5 @@ public class CastScreenService extends Service {
         EventBus.getDefault().unregister(this);
         super.onDestroy();
         Log.e(TAG,"onDestroy");
-        CastApplication.getAppContext().AppExit();
     }
 }

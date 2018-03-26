@@ -26,7 +26,8 @@
         fab:menu_colorPressed="#2272CD"
         fab:menu_colorRipple="#62B2FF"
         fab:menu_labels_maxLines="2"
-        fab:menu_labels_ellipsize="end">
+        fab:menu_labels_ellipsize="end"
+        >
 
         <com.github.clans.fab.FloatingActionButton
             android:id="@+id/fab_pen_style"

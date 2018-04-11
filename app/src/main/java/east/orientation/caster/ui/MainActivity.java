@@ -5,7 +5,6 @@ import android.content.Intent;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Handler;
-import android.os.Looper;
 import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
@@ -30,14 +29,17 @@ import java.nio.ByteOrder;
 
 import east.orientation.caster.R;
 import east.orientation.caster.cast.CastScreenService;
+import east.orientation.caster.cast.Waiter;
 import east.orientation.caster.evevtbus.CastMessage;
+import east.orientation.caster.evevtbus.ConnectMessage;
+import east.orientation.caster.local.AudioConfig;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.protocol.NormalHeaderProtocol;
 import east.orientation.caster.request.LoginRequest;
+import east.orientation.caster.request.Mp3ParamsResponse;
 import east.orientation.caster.request.Pluse;
 import east.orientation.caster.request.StartCastRequest;
 import east.orientation.caster.util.ToastUtil;
-import east.orientation.caster.view.WindowFloatManager;
 
 import static com.xuhao.android.libsocket.sdk.OkSocket.open;
 import static east.orientation.caster.CastApplication.getAppContext;
@@ -50,7 +52,7 @@ import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAM
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_CAST_GENERATOR_ERROR;
 
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK;
-import static east.orientation.caster.local.Common.REQUEST_CODE_SCREEN_CAPTURE;
+import static east.orientation.caster.local.VideoConfig.REQUEST_CODE_SCREEN_CAPTURE;
 
 public class MainActivity extends AppCompatActivity{
     private static final String TAG = "MainActivity";
@@ -74,7 +76,7 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketIOThreadShutdown(Context context, String action, Exception e) {
             super.onSocketIOThreadShutdown(context, action, e);
-            Log.e(TAG,"onSocketIOThreadShutdown");
+            Log.e(TAG,"onSocketIOThreadShutdown"+e);
         }
 
         @Override
@@ -82,7 +84,7 @@ public class MainActivity extends AppCompatActivity{
             super.onSocketDisconnection(context, info, action, e);
             // 设置连接状态
             getAppInfo().setServerConnected(false);
-            Log.e(TAG,"断开连接");
+            Log.e(TAG,"onSocketDisconnection"+e);
         }
 
         @Override
@@ -94,13 +96,14 @@ public class MainActivity extends AppCompatActivity{
             getAppInfo().getConnectionManager().getPulseManager().setPulseSendable(new Pluse(1)).pulse();
             // 连接成功则发送登陆请求
             getAppInfo().getConnectionManager().send(new LoginRequest(Common.LOGIN_TYPE_TEACHER));
-            Log.e(TAG,"连接成功");
+            Log.e(TAG,"onSocketConnectionSuccess");
+            ToastUtil.show(getAppContext(),"已连接服务器");
         }
 
         @Override
         public void onSocketConnectionFailed(Context context, ConnectionInfo info, String action, Exception e) {
             super.onSocketConnectionFailed(context, info, action, e);
-            Log.e(TAG,"连接失败");
+            Log.e(TAG,"onSocketConnectionFailed"+e);
         }
 
         @Override
@@ -113,13 +116,13 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketWriteResponse(Context context, ConnectionInfo info, String action, ISendable data) {
             super.onSocketWriteResponse(context, info, action, data);
-            Log.e(TAG,"发送 ："+data.parse().length);
+            //Log.e(TAG,"发送 ："+data.parse().length);
         }
 
         @Override
         public void onPulseSend(Context context, ConnectionInfo info, IPulseSendable data) {
             super.onPulseSend(context, info, data);
-            Log.e(TAG,"心跳已发送");
+            //Log.e(TAG,"心跳已发送");
         }
     };
 
@@ -130,31 +133,41 @@ public class MainActivity extends AppCompatActivity{
         mContent = findViewById(R.id.content);
         mIvTheme = findViewById(R.id.iv_theme);
 
-//        mHandler = new Handler(Looper.getMainLooper());
-//        // 显示悬浮框
-//        mHandler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                WindowFloatManager.getInstance().showFloatButton();
-//            }
-//        },2000);
-
         // 初始化
         init();
+        // 注册eventbus
+        EventBus.getDefault().register(this);
+        //
+        onBackPressed();
     }
     /**
      *
      * 初始化
      */
     private void init() {
-        mConnectionInfo = new ConnectionInfo("192.168.0.100", 8888);
+        Waiter.getInstance().setSearchListener(new Waiter.OnSearchListener() {
+            @Override
+            public void onSearchFinished(String ip,int port) {
+                EventBus.getDefault().post(new ConnectMessage(ip,port));
+            }
+        });
+        Waiter.getInstance().start();
+
+    }
+
+    /**
+     * 连接服务器
+     * @param ip
+     */
+    private void connectToServer(String ip,int port){
+        mConnectionInfo = new ConnectionInfo(ip, port);
 
         mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
-                .setSinglePackageBytes(1024*7)// 设置每个包的长度
+                .setSinglePackageBytes(1024)// 设置每个包的长度
                 .setBackgroundLiveMinute(-1)// 设置后台久活
                 .setHeaderProtocol(new NormalHeaderProtocol())// 设置自定义包头
                 .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
-                .setPulseFrequency(3000)// 设置心跳间隔/毫秒
+                .setPulseFrequency(30000)// 设置心跳间隔/毫秒
                 .build();
         getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo, mOkOptions));
 
@@ -191,9 +204,9 @@ public class MainActivity extends AppCompatActivity{
         // 标志
         int flag = BytesUtils.bytesToInt(header,8);
 
-        boolean isOk = BytesUtils.bytesToInt(body,0) == 1;
         switch (flag){
             case Common.FLAG_LOGIN_RESPONSE:// 登录回执
+                boolean isOk = BytesUtils.bytesToInt(body,0) == 1;
                 if (isOk) {
                     // 登录成功 则启动
                     getAppInfo().getConnectionManager().send(new StartCastRequest());
@@ -207,7 +220,11 @@ public class MainActivity extends AppCompatActivity{
                 Log.e(TAG,"收到心跳回执");
                 getAppInfo().getConnectionManager().getPulseManager().feed();
                 break;
-
+            case Common.FLAG_MP3_PARAM_REQUEST:
+                // mp3参数请求
+                getAppInfo().getConnectionManager().send(new Mp3ParamsResponse(AudioConfig.DEFAULT_CHANNEL_COUNT,
+                        AudioConfig.DEFAULT_FREQUENCY,AudioConfig.DEFAULT_MP3_SIMPLE_FORMAT));
+                break;
             default:
                 break;
         }
@@ -250,7 +267,8 @@ public class MainActivity extends AppCompatActivity{
     @Override
     protected void onStart() {
         super.onStart();
-        EventBus.getDefault().register(this);
+        Log.e(TAG,"MainActivity onStart");
+
         getAppInfo().setActivityRunning(true);
     }
 
@@ -287,12 +305,11 @@ public class MainActivity extends AppCompatActivity{
         }
     }
 
-    @Override
-    protected void onStop() {
-        EventBus.getDefault().unregister(this);
-        getAppInfo().setActivityRunning(false);
-        super.onStop();
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(ConnectMessage message){
+        connectToServer(message.getIp(),message.getPort());
     }
+
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -329,5 +346,20 @@ public class MainActivity extends AppCompatActivity{
         setMediaProjection(mediaProjection);
 
         EventBus.getDefault().post(new CastMessage(MESSAGE_ACTION_STREAMING_START));
+    }
+
+
+    @Override
+    public void onBackPressed() {
+        Intent intent = new Intent(Intent.ACTION_MAIN,null);
+        intent.addCategory(Intent.CATEGORY_HOME);
+        startActivity(intent);
+    }
+
+    @Override
+    protected void onDestroy() {
+        getAppInfo().setActivityRunning(false);
+        EventBus.getDefault().unregister(this);
+        super.onDestroy();
     }
 }

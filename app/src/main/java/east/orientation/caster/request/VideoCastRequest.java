@@ -1,12 +1,5 @@
 package east.orientation.caster.request;
 
-import android.util.Log;
-
-import com.xuhao.android.libsocket.utils.BytesUtils;
-
-import java.nio.ByteBuffer;
-import java.nio.ByteOrder;
-
 import east.orientation.caster.local.Common;
 
 /**
@@ -17,17 +10,17 @@ import east.orientation.caster.local.Common;
  * data:录屏流中的某帧数据
  */
 
-public class CastRequest extends BaseRequest {
+public class VideoCastRequest extends BaseRequest {
 
     private byte[] frame ;
 
-    public CastRequest(byte[] frame){
+    public VideoCastRequest(byte[] frame){
         this.frame = frame;
     }
 
     @Override
     public int getFlag() {
-        return Common.FLAG_CAST_STREAM;
+        return Common.FLAG_VIDEO_STREAM;
     }
 
     @Override

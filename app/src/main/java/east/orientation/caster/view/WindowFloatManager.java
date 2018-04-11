@@ -1,26 +1,42 @@
 package east.orientation.caster.view;
 
+import android.animation.ObjectAnimator;
+import android.animation.PropertyValuesHolder;
 import android.app.AppOpsManager;
 import android.content.Context;
-import android.graphics.PixelFormat;
+import android.content.Intent;
 import android.os.Binder;
 import android.os.Build;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.util.DisplayMetrics;
-import android.view.Gravity;
+import android.view.View;
 import android.view.WindowManager;
-import android.view.WindowManager.LayoutParams;
+import android.view.animation.LinearInterpolator;
+import android.widget.AdapterView;
 import android.widget.ImageView;
+
+import org.greenrobot.eventbus.EventBus;
 
 import java.lang.reflect.Method;
 
 import east.orientation.caster.R;
+import east.orientation.caster.evevtbus.CastMessage;
+import east.orientation.caster.ui.MainActivity;
+import east.orientation.caster.ui.SettingActivity;
+import east.orientation.caster.ui.WriteActivity;
+import east.orientation.caster.util.FloatWindowPermissionChecker;
+import east.orientation.caster.util.RomUtils;
+import east.orientation.caster.util.ToastUtil;
 
 import static east.orientation.caster.CastApplication.getAppContext;
+import static east.orientation.caster.CastApplication.getAppInfo;
+import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_TRY_START;
+import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK;
 
 
 /**
@@ -32,15 +48,7 @@ public class WindowFloatManager {
     private static DisplayMetrics sDisplayMetrics;
     private static Context mContext;
 
-    private int mScreenWidth;// 屏幕宽
-    private int mScreenHeight;// 屏幕长
-
-    private TipLayout mTipLayout;
-    private LayoutParams mTipLayoutParam;
-
-    private FloatLayout mFloatLayout;
-    private LayoutParams mMenuLayoutParam;
-
+    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_cast_large,R.mipmap.ic_stu_screen,R.mipmap.ic_cast_all,R.mipmap.ic_setting};
     private int[] mIconsId;
 
 
@@ -55,10 +63,7 @@ public class WindowFloatManager {
     private WindowFloatManager(Context context){
         mContext = context;
         sWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
-        sDisplayMetrics = new DisplayMetrics();
-        sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
-        mScreenWidth = sDisplayMetrics.widthPixels;
-        mScreenHeight = sDisplayMetrics.heightPixels;
+        mIconsId = DEFAULT_ICONS;
     }
 
     private static class InnerClass {
@@ -80,94 +85,140 @@ public class WindowFloatManager {
         return sWindowManager;
     }
 
-    /**
-     * 显示悬浮球
-     */
-    public void showTipView() {
-        if (mTipLayout == null) {
-            mTipLayout = new TipLayout(mContext);
-            if (mTipLayoutParam == null && checkFloatWindowPermission()) {
-                mTipLayoutParam = new LayoutParams();
-                mTipLayoutParam.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-                mTipLayoutParam.type = LayoutParams.TYPE_SYSTEM_ALERT;
-                mTipLayoutParam.format = PixelFormat.TRANSLUCENT;
-                mTipLayoutParam.x = mScreenWidth / 2 - mTipLayout.getViewWidth() / 2;
-                mTipLayoutParam.y = mScreenHeight / 2 - mTipLayout.getViewHeight() / 2;
-                mTipLayoutParam.gravity = Gravity.LEFT | Gravity.TOP;
-                mTipLayoutParam.width = mTipLayout.getViewWidth();
-                mTipLayoutParam.height = mTipLayout.getViewHeight();
-            }
-            mTipLayout.setParams(mTipLayoutParam);
-            getWindowManager().addView(mTipLayout, mTipLayoutParam);
-        }
-    }
-    /**
-     * 显示菜单
-     */
-    public void showFloatMenu(){
-        if (mFloatLayout == null) {
-            mFloatLayout = new FloatLayout(mContext);
-            if (mMenuLayoutParam == null && checkFloatWindowPermission()) {
-                mMenuLayoutParam = new LayoutParams();
-                mMenuLayoutParam.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH;
-                mMenuLayoutParam.type = LayoutParams.TYPE_SYSTEM_ALERT;
-                mMenuLayoutParam.format = PixelFormat.TRANSLUCENT;
-                mMenuLayoutParam.x = mScreenWidth / 2 - mFloatLayout.getViewWidth()/ 2;
-                mMenuLayoutParam.y = mScreenHeight / 2 - mFloatLayout.getViewHeight()/ 2;
-                mMenuLayoutParam.gravity = Gravity.LEFT | Gravity.TOP;
-                mMenuLayoutParam.width = mFloatLayout.getViewWidth();
-                mMenuLayoutParam.height = mFloatLayout.getViewHeight();
-            }
-            mFloatLayout.setParams(mMenuLayoutParam);
-            getWindowManager().addView(mFloatLayout, mMenuLayoutParam);
-        }
-    }
+
 
     /**
      * 设置图标资源
      */
-    public void setResourse(int[] iconsId){
+    public void setResource(int[] iconsId){
         if (iconsId != null && iconsId.length>0)
             mIconsId = iconsId;
-        // todo 设置默认图标
-
     }
 
     private FloatingActionButton mFloatingActionButton;
     private FloatingActionMenu mFloatingActionMenu;
 
     public void showFloatMenus(){
-        ImageView[] menuIcons = new ImageView[mIconsId.length];
-        SubActionButton[] subButtons = new SubActionButton[mIconsId.length];
+        if (!FloatWindowPermissionChecker.checkFloatWindowPermission()){
+            ToastUtil.show(mContext,"需开启权限");
+            FloatWindowPermissionChecker.tryJumpToPermissionPage(mContext);
+        }
 
+        // 子菜单图标
+        ImageView[] menuIcons = new ImageView[mIconsId.length];
+        // 在菜单按钮
+        SubActionButton[] subButtons = new SubActionButton[mIconsId.length];
+        // 主按钮
         ImageView fabIcon = new ImageView(mContext);
+        fabIcon.setScaleType(ImageView.ScaleType.CENTER_CROP);
         fabIcon.setImageDrawable(mContext.getResources().getDrawable(R.mipmap.app_launcher));
 
         SubActionButton.Builder subBuilder = new SubActionButton.Builder(mContext);
         FloatingActionMenu.Builder menuBuilder = new FloatingActionMenu.Builder(mContext,true);
 
         WindowManager.LayoutParams params = FloatingActionButton.Builder.getDefaultSystemWindowParams(mContext);
-//        params.x = 50;
-//        params.y = 50;
+
         mFloatingActionButton = new FloatingActionButton.Builder(mContext)
                 .setContentView(fabIcon)
                 .setSystemOverlay(true)
                 .setLayoutParams(params)
-                .setPosition(FloatingActionButton.POSITION_TOP_LEFT)
+                .setPosition(FloatingActionButton.POSITION_RIGHT_CENTER)
                 .build();
 
         for (int i = 0; i < mIconsId.length; i++) {
             menuIcons[i] = new ImageView(mContext);
             menuIcons[i].setImageDrawable(mContext.getResources().getDrawable(mIconsId[i]));
+            menuIcons[i].setScaleType(ImageView.ScaleType.CENTER);
             subButtons[i] = subBuilder.setContentView(menuIcons[i]).build();
             menuBuilder.addSubActionView(subButtons[i],subButtons[i].getLayoutParams().width,subButtons[i].getLayoutParams().height);
         }
-        menuBuilder.setStartAngle(180);
-        menuBuilder.setEndAngle(270);
+        menuBuilder.setStartAngle(0);
+        menuBuilder.setEndAngle(90);
         menuBuilder.attachTo(mFloatingActionButton);
+        menuBuilder.setActionViewLongPressListener(new FloatingActionMenu.ActionViewLongPressListener() {
+            @Override
+            public void onLongPressed(View actionView) {
+                if(!getAppInfo().isActivityRunning()){
+                    // 打开主页面
+                    Vibrator vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
+                    vibrator.vibrate(100);
+                    mContext.startActivity(new Intent(mContext, MainActivity.class)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+                }
+            }
+        });
         mFloatingActionMenu = menuBuilder.build();
+
+        // 子菜单项点击事件
+        setItemClickListener(subButtons);
+
+        // actionView 动画
+        PropertyValuesHolder pvhR = PropertyValuesHolder.ofFloat(View.ROTATION, 360);
+        final ObjectAnimator animation = ObjectAnimator.ofPropertyValuesHolder(mFloatingActionButton, pvhR);
+        animation.setInterpolator(new LinearInterpolator());
+        animation.setRepeatCount(-1);
+        animation.setDuration(10);
+//        mFloatingActionMenu.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
+//            @Override
+//            public void onMenuOpened(FloatingActionMenu menu) {
+//                mFloatingActionButton.setRotation(0);
+//                animation.start();
+//            }
+//
+//            @Override
+//            public void onMenuClosed(FloatingActionMenu menu) {
+//                animation.cancel();
+//                mFloatingActionButton.setRotation(0);
+//            }
+//        });
+    }
+
+    private void setItemClickListener(SubActionButton[] subButtons) {
+        // 画板
+        subButtons[0].setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mContext.startActivity(new Intent(mContext, WriteActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+        });
+        // 资源
+        subButtons[1].setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ToastUtil.show(mContext,"开发ing !");
+            }
+        });
+        // 投屏
+        subButtons[2].setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
+                if (stickyEvent == null || MESSAGE_STATUS_TCP_OK.equals(stickyEvent.getMessage())) {
+                    EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
+                }
+            }
+        });
+        // 演示
+        subButtons[3].setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ToastUtil.show(mContext,"开发ing !");
+            }
+        });
+        // 广播
+        subButtons[4].setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                ToastUtil.show(mContext,"开发ing !");
+            }
+        });
+        // 设置
+        subButtons[5].setOnClickListener(new View.OnClickListener() {
+            @Override
+            public void onClick(View v) {
+                mContext.startActivity(new Intent(mContext, SettingActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+            }
+        });
     }
 
     /**
@@ -209,7 +260,7 @@ public class WindowFloatManager {
             arrayOfObject1[2] = getAppContext().getPackageName();
             int m = (Integer) method.invoke(object, arrayOfObject1);
             //4.4至6.0之间的非国产手机，例如samsung，sony一般都可以直接添加悬浮窗
-            return m == AppOpsManager.MODE_ALLOWED ;
+            return m == AppOpsManager.MODE_ALLOWED || !RomUtils.isDomesticSpecialRom();
         } catch (Exception ignore) {
         }
         return false;

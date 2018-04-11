@@ -13,7 +13,10 @@ import android.graphics.Point;
 import android.graphics.Rect;
 import android.graphics.RectF;
 import android.hardware.SensorManager;
+import android.os.Build;
+import android.util.Log;
 import android.view.Display;
+import android.view.GestureDetector;
 import android.view.Gravity;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
@@ -32,6 +35,10 @@ import east.orientation.caster.R;
 import east.orientation.caster.view.anim.DefaultAnimationHandler;
 import east.orientation.caster.view.anim.MenuAnimationHandler;
 
+import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
+import static android.view.WindowManager.LayoutParams.TYPE_TOAST;
+
 /**
  * Provides the main structure of the menu.
  */
@@ -41,9 +48,9 @@ public class FloatingActionMenu {
     /** Reference to the view (usually a button) to trigger the menu to show */
     private View mainActionView;
     /** The angle (in degrees, modulus 360) which the circular menu starts from  */
-    private int startAngle;
+    private float startAngle;
     /** The angle (in degrees, modulus 360) which the circular menu ends at  */
-    private int endAngle;
+    private float endAngle;
     /** Distance of menu items from mainActionView */
     private int radius;
     /** List of menu items */
@@ -63,6 +70,60 @@ public class FloatingActionMenu {
 
     private OrientationEventListener orientationListener;
 
+    private ActionViewLongPressListener actionViewLongPressListener;
+
+    //记录当前手指位置在屏幕上的横坐标值
+    private float xInScreen;
+
+    //记录当前手指位置在屏幕上的纵坐标值
+    private float yInScreen;
+
+    //记录手指按下时在屏幕上的横坐标的值
+    private float xDownInScreen;
+
+    //记录手指按下时在屏幕上的纵坐标的值
+    private float yDownInScreen;
+
+    //记录手指按下时在小悬浮窗的View上的横坐标的值
+    private float xInView;
+
+    //记录手指按下时在小悬浮窗的View上的纵坐标的值
+    private float yInView;
+
+    private GestureDetector mGestureDetector;
+
+    private GestureDetector.OnGestureListener mOnGestureListener = new GestureDetector.OnGestureListener() {
+        @Override
+        public boolean onDown(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public void onShowPress(MotionEvent e) {
+
+        }
+
+        @Override
+        public boolean onSingleTapUp(MotionEvent e) {
+            return false;
+        }
+
+        @Override
+        public boolean onScroll(MotionEvent e1, MotionEvent e2, float distanceX, float distanceY) {
+            return false;
+        }
+
+        @Override
+        public void onLongPress(MotionEvent e) {
+            actionViewLongPressListener.onLongPressed(mainActionView);
+            Log.e("1018","long press");
+        }
+
+        @Override
+        public boolean onFling(MotionEvent e1, MotionEvent e2, float velocityX, float velocityY) {
+            return false;
+        }
+    };
     /**
      * Constructor that takes the parameters collected using {@link Builder}
      * @param mainActionView
@@ -74,14 +135,15 @@ public class FloatingActionMenu {
      * @param animated
      */
     public FloatingActionMenu(final View mainActionView,
-                              int startAngle,
-                              int endAngle,
+                              float startAngle,
+                              float endAngle,
                               int radius,
                               List<Item> subActionItems,
                               MenuAnimationHandler animationHandler,
                               final boolean animated,
                               MenuStateChangeListener stateChangeListener,
-                              final boolean systemOverlay) {
+                              final boolean systemOverlay,
+                              ActionViewLongPressListener actionViewLongPressListener) {
         this.mainActionView = mainActionView;
         this.startAngle = startAngle;
         this.endAngle = endAngle;
@@ -90,10 +152,13 @@ public class FloatingActionMenu {
         this.animationHandler = animationHandler;
         this.animated = animated;
         this.systemOverlay = systemOverlay;
+        this.actionViewLongPressListener = actionViewLongPressListener;
         // The menu is initially closed.
         this.open = false;
 
         this.stateChangeListener = stateChangeListener;
+
+        mGestureDetector = new GestureDetector(mainActionView.getContext(),mOnGestureListener);
 
         // Listen click events on the main action view
         // In the future, touch and drag events could be listened to offer an alternative behaviour
@@ -111,25 +176,31 @@ public class FloatingActionMenu {
                         yDownInScreen = event.getRawY() - getStatusBarHeight();
                         xInScreen = event.getRawX();
                         yInScreen = event.getRawY() - getStatusBarHeight();
+                        //
+                        calculateMaxOpenArc();
                         break;
                     case MotionEvent.ACTION_MOVE:
                         xInScreen = event.getRawX();
                         yInScreen = event.getRawY() - getStatusBarHeight();
+
                         // 手指移动的时候更新小悬浮窗的位置
                         // todo 改变位置
-                        updateViewPosition();
+                        if (!open)
+                            updateViewPosition();
+                        calculateMaxOpenArc();
 
                         break;
                     case MotionEvent.ACTION_UP:
                         // 如果手指离开屏幕时，xDownInScreen和xInScreen相等，且yDownInScreen和yInScreen相等，则视为触发了单击事件。
-                        if (xDownInScreen == xInScreen && yDownInScreen == yInScreen) {
+                        if(Math.abs(xInScreen-xDownInScreen) < 3 && Math.abs(yInScreen-yDownInScreen) < 3){
+                            // 超短距离移动视为点击
                             toggle(animated);
                         }
                         break;
                     default:
                         break;
                 }
-                return true;
+                return mGestureDetector.onTouchEvent(event);
             }
         });
 
@@ -172,7 +243,6 @@ public class FloatingActionMenu {
                     Display display = getWindowManager().getDefaultDisplay();
                     if(display.getRotation() != lastState) {
                         lastState = display.getRotation();
-
                         //
                         if(isOpen()) {
                             close(false);
@@ -182,6 +252,70 @@ public class FloatingActionMenu {
             };
             orientationListener.enable();
         }
+    }
+
+    /**
+     * 计算最大展开角度
+     */
+    private void calculateMaxOpenArc() {
+        Point center = getActionViewCenter();
+        float radius = getRadius();
+        float itemWidth = subActionItems.get(0).width;
+        float itemHeight = subActionItems.get(0).height;
+        double arc;
+
+        if(center.x>=radius+itemWidth/2 && center.y >=radius+itemHeight/2
+                && getScreenSize().x-center.x>=radius+itemWidth/2 && getScreenSize().y-center.y>=radius+itemHeight/2){
+            // 在中间
+            Log.e("1018","在中间");
+            startAngle = 0;
+            endAngle = 360;
+        }else if(center.x<radius+itemWidth/2 && center.y>radius+itemHeight/2 && getScreenSize().y-center.y>radius+itemHeight/2){
+            // 在左中
+            Log.e("1018","在左中");
+            arc = Math.acos((center.x-itemWidth/2)/radius)/Math.PI*180;
+            startAngle = (float) (arc-180);
+            endAngle = (float) (180-arc);
+        }else if(getScreenSize().x-center.x<radius+itemWidth/2 && center.y >radius+itemHeight/2 && getScreenSize().y-center.y>radius+itemHeight/2){
+            // 在右中
+            Log.e("1018","在右中");
+            arc = Math.acos((getScreenSize().x-center.x-itemWidth/2)/radius)/Math.PI*180;
+            startAngle = (float) (arc);
+            endAngle = (float) (360-arc);
+        }else if(center.y<radius+itemWidth/2 && center.x>radius+itemWidth/2 && getScreenSize().x-center.x>radius+itemWidth/2){
+            // 在上中
+            Log.e("1018","在上中");
+            arc = Math.acos((center.y-itemHeight/2)/radius)/Math.PI*180;
+            startAngle = (float) (arc-90);
+            endAngle = (float) (270-arc);
+        }else if(getScreenSize().y-center.y<radius+itemWidth/2 && center.x>radius+itemWidth/2 && getScreenSize().x-center.x>radius+itemWidth/2){
+            // 在下中
+            Log.e("1018","在下中");
+            arc = Math.acos((getScreenSize().y-center.y-itemHeight/2)/radius)/Math.PI*180;
+            startAngle = (float) (arc+90);
+            endAngle = (float) (450-arc);
+        }else if(center.x<radius+itemWidth/2 && center.y<radius+itemWidth/2){
+            // 在左上
+            Log.e("1018","在左上");
+            startAngle = (float) (Math.acos((center.y-itemHeight/2)/radius)/Math.PI*180-90);
+            endAngle = (float) (180-Math.acos((center.x-itemWidth/2)/radius)/Math.PI*180);
+        }else if(getScreenSize().x-center.x<radius+itemWidth/2 && center.y<radius+itemWidth/2){
+            // 在右上
+            Log.e("1018","在右上");
+            startAngle = (float) (Math.acos((getScreenSize().x-center.x-itemWidth/2)/radius)/Math.PI*180);
+            endAngle = (float) (270-Math.acos((center.y-itemHeight/2)/radius)/Math.PI*180);
+        }else if(center.x<radius+itemWidth/2 && getScreenSize().y-center.y<radius+itemWidth/2){
+            // 在左下
+            Log.e("1018","在左下");
+            startAngle = (float) (Math.acos((center.x-itemWidth/2)/radius)/Math.PI*180-180);
+            endAngle = (float) (90-Math.acos((getScreenSize().y-center.y-itemHeight/2)/radius)/Math.PI*180);
+        }else if(getScreenSize().x-center.x<radius+itemWidth/2 && getScreenSize().y-center.y<radius+itemWidth/2){
+            // 在右下
+            Log.e("1018","在右下");
+            startAngle = (float) (Math.acos((getScreenSize().y-center.y-itemHeight/2)/radius)/Math.PI*180+90);
+            endAngle = (float) (360-Math.acos((getScreenSize().x-center.x-itemWidth/2)/radius)/Math.PI*180);
+        }
+        Log.e("1018","startArc :"+startAngle + " endArc :" +endAngle);
     }
 
     /**
@@ -508,6 +642,7 @@ public class FloatingActionMenu {
         overlayParams.height = bottom - top;
         overlayParams.x = left;
         overlayParams.y = top;
+
         overlayParams.gravity = Gravity.TOP | Gravity.LEFT;
         return overlayParams;
     }
@@ -552,27 +687,9 @@ public class FloatingActionMenu {
         this.stateChangeListener = listener;
     }
 
-    //记录当前手指位置在屏幕上的横坐标值
-    private float xInScreen;
-
-    //记录当前手指位置在屏幕上的纵坐标值
-    private float yInScreen;
-
-    //记录手指按下时在屏幕上的横坐标的值
-    private float xDownInScreen;
-
-    //记录手指按下时在屏幕上的纵坐标的值
-    private float yDownInScreen;
-
-    //记录手指按下时在小悬浮窗的View上的横坐标的值
-    private float xInView;
-
-    //记录手指按下时在小悬浮窗的View上的纵坐标的值
-    private float yInView;
-
-    // 记录状态栏高度
-    private int mStatusBarHeight;
-
+    public void setActionViewLongPressesLisener(ActionViewLongPressListener actionViewLongPressesLisener){
+        this.actionViewLongPressListener = actionViewLongPressesLisener;
+    }
 
     /**
      * 更新小悬浮窗在屏幕中的位置。
@@ -658,13 +775,17 @@ public class FloatingActionMenu {
         public void onMenuClosed(FloatingActionMenu menu);
     }
 
+    public static interface ActionViewLongPressListener{
+        void onLongPressed(View actionView);
+    }
+
     /**
      * A builder for {@link FloatingActionMenu} in conventional Java Builder format
      */
     public static class Builder {
 
-        private int startAngle;
-        private int endAngle;
+        private float startAngle;
+        private float endAngle;
         private int radius;
         private View actionView;
         private List<Item> subActionItems;
@@ -672,6 +793,7 @@ public class FloatingActionMenu {
         private boolean animated;
         private MenuStateChangeListener stateChangeListener;
         private boolean systemOverlay;
+        private ActionViewLongPressListener actionViewLongPressListener;
 
         public Builder(Context context, boolean systemOverlay) {
             subActionItems = new ArrayList<Item>();
@@ -688,12 +810,12 @@ public class FloatingActionMenu {
             this(context, false);
         }
 
-        public Builder setStartAngle(int startAngle) {
+        public Builder setStartAngle(float startAngle) {
             this.startAngle = startAngle;
             return this;
         }
 
-        public Builder setEndAngle(int endAngle) {
+        public Builder setEndAngle(float endAngle) {
             this.endAngle = endAngle;
             return this;
         }
@@ -760,6 +882,11 @@ public class FloatingActionMenu {
             return this;
         }
 
+        public Builder setActionViewLongPressListener(ActionViewLongPressListener listener) {
+            actionViewLongPressListener = listener;
+            return this;
+        }
+
         public Builder setSystemOverlay(boolean systemOverlay) {
             this.systemOverlay = systemOverlay;
             return this;
@@ -785,16 +912,26 @@ public class FloatingActionMenu {
                                           animationHandler,
                                           animated,
                                           stateChangeListener,
-                                          systemOverlay);
+                                          systemOverlay,
+                                          actionViewLongPressListener);
         }
     }
 
     public static WindowManager.LayoutParams getDefaultSystemWindowParams() {
+        int paramType  = TYPE_SYSTEM_ALERT;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            paramType = TYPE_APPLICATION_OVERLAY;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            paramType = TYPE_TOAST;
+        } else {
+            paramType = TYPE_SYSTEM_ALERT;
+        }
+
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                WindowManager.LayoutParams.TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                paramType,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_WATCH_OUTSIDE_TOUCH,
                 PixelFormat.TRANSLUCENT);
         params.format = PixelFormat.RGBA_8888;
         params.gravity = Gravity.TOP | Gravity.LEFT;

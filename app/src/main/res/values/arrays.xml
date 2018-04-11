@@ -54,10 +54,10 @@
 
     <!--bitrate-->
     <string-array name="bitrate">
-        <item>1 Mbps</item>
-        <item>2 Mbps</item>
-        <item>4 Mbps</item>
-        <item>6 Mbps</item>
+        <item>600k bps</item>
+        <item>800k bps</item>
+        <item>1M bps</item>
+        <item>2M bps</item>
     </string-array>
 
     <!--fps-->

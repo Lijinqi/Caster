@@ -106,7 +106,7 @@ public class SubActionButton extends FrameLayout {
             int size = context.getResources().getDimensionPixelSize(R.dimen.sub_action_button_size);
             LayoutParams params = new LayoutParams(size, size, Gravity.TOP | Gravity.LEFT);
             setLayoutParams(params);
-            setTheme(SubActionButton.THEME_LIGHT);
+            setTheme(SubActionButton.THEME_DARK);
         }
 
         public Builder setLayoutParams(LayoutParams params) {

@@ -7,7 +7,7 @@ android {
         minSdkVersion 21
         targetSdkVersion 26
         versionCode 1
-        versionName "1.0"
+        versionName "1.0.2"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         javaCompileOptions {
@@ -16,6 +16,23 @@ android {
             }
         }
     }
+
+    signingConfigs {
+        release {
+            storeFile file("E:/Lijinqi/KEY_TOOL/sys/Doom.jks")
+            storePassword '123456'
+            keyAlias 'Doom'
+            keyPassword '123456'
+        }
+
+        debug {
+            storeFile file("E:/Lijinqi/KEY_TOOL/sys/Doom.jks")
+            storePassword '123456'
+            keyAlias 'Doom'
+            keyPassword '123456'
+        }
+    }
+
     buildTypes {
         debug {
             buildConfigField "Boolean", "DEBUG_MODE", "true"
@@ -73,5 +90,6 @@ dependencies {
     //compile 'devlight.io:navigationtabbar:1.2.5'
     // CircleImageView
     compile 'de.hdodenhof:circleimageview:2.2.0'
+    compile project(path: ':lamelibrary')
 }
 

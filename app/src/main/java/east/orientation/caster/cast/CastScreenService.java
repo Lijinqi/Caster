@@ -107,7 +107,8 @@ public class CastScreenService extends Service {
             }
         };
 
-        getAppInfo().getScreenStream().clear();
+        getAppInfo().getScreenVideoStream().clear();
+        getAppInfo().getAudioStream().clear();
 
         // Starting thread Handler 开启handler线程
         mHandlerThread = new HandlerThread(
@@ -213,12 +214,13 @@ public class CastScreenService extends Service {
         mHandler.postDelayed(new Runnable() {
             @Override
             public void run() {
-                //WindowFloatManager.getInstance().showTipView();
-                WindowFloatManager.getInstance().setResourse(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
+                //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
                 WindowFloatManager.getInstance().showFloatMenus();
             }
-        },1000);
+        },500);
 
+        // 开启发送帧数据线程
+        FrameSender.start();
 
         EventBus.getDefault().register(this);
     }
@@ -261,7 +263,8 @@ public class CastScreenService extends Service {
             mMediaProjection.unregisterCallback(mProjectionCallback);
             mMediaProjection.stop();
         }
-        getAppInfo().getScreenStream().clear();
+        getAppInfo().getScreenVideoStream().clear();
+        getAppInfo().getAudioStream().clear();
     }
 
 
@@ -390,6 +393,8 @@ public class CastScreenService extends Service {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             mNotificationManager.deleteNotificationChannel(Common.NOTIFICATION_CHANNEL_ID);
         }
+
+        FrameSender.stop();
 
         if (getAppInfo().getConnectionManager() != null){
             getAppInfo().getConnectionManager().disConnect();

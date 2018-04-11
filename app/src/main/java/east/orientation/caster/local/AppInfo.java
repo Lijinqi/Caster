@@ -22,7 +22,8 @@ public class AppInfo {
     private IConnectionManager mConnectionManager;// 连接tcp管理器
     private String mServerIp;
 
-    private ConcurrentLinkedDeque<byte[]> mScreenStream = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<byte[]> mScreenVideoStream = new ConcurrentLinkedDeque<>();
+    private ConcurrentLinkedDeque<byte[]> mAudioStream = new ConcurrentLinkedDeque<>();
 
     public AppInfo(final Context context) {
         mWifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -44,8 +45,12 @@ public class AppInfo {
         mServerIp = serverIp;
     }
 
-    public ConcurrentLinkedDeque<byte[]> getScreenStream() {
-        return mScreenStream;
+    public ConcurrentLinkedDeque<byte[]> getScreenVideoStream() {
+        return mScreenVideoStream;
+    }
+
+    public ConcurrentLinkedDeque<byte[]> getAudioStream() {
+        return mAudioStream;
     }
 
     public boolean isServerConnected() {

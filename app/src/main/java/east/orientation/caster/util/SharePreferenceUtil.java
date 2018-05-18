@@ -57,6 +57,11 @@ public class SharePreferenceUtil {
         SharedPreferencesCompat.apply(editor);
     }
 
+    public static void put(Context context, String key1, Object object1,String key2, Object object2){
+        put(context,key1,object1);
+        put(context,key2,object2);
+    }
+
     /**
      * 得到保存数据的方法，我们根据默认值得到保存的数据的具体类型，然后调用相对于的方法获取值
      */

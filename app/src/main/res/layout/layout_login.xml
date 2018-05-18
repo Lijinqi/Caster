@@ -1,0 +1,65 @@
+<?xml version="1.0" encoding="utf-8"?>
+<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
+    <LinearLayout
+        android:id="@+id/ll_edit_container"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical"
+        android:background="@drawable/sp_login_edit_back"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:padding="5dp">
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/til_User"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:theme="@style/Login_Edit_Style"
+            app:errorTextAppearance="@style/errorAppearance">
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/et_User"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/tx_hint_user"
+                android:maxLines="1"
+                android:textColor="@color/colorEditText"/>
+        </android.support.design.widget.TextInputLayout>
+
+
+        <android.support.design.widget.TextInputLayout
+            android:id="@+id/til_Pwd"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:theme="@style/Login_Edit_Style"
+            app:counterEnabled="true"
+            app:counterMaxLength="20"
+            app:errorTextAppearance="@style/errorAppearance"
+            app:passwordToggleEnabled="true">
+            <android.support.design.widget.TextInputEditText
+                android:id="@+id/et_Pwd"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:hint="@string/tx_hint_pwd"
+                android:maxLines="1"
+                android:textColor="@color/colorEditText"
+                android:inputType="textPassword"/>
+        </android.support.design.widget.TextInputLayout>
+    </LinearLayout>
+
+    <Button
+        android:id="@+id/btn_load"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:background="@drawable/sl_login_btn_back"
+        android:layout_marginLeft="20dp"
+        android:layout_marginRight="20dp"
+        android:layout_marginTop="10dp"
+        android:layout_marginBottom="10dp"
+        android:layout_below="@+id/ll_edit_container"
+        android:text="@string/tx_load"
+        android:textColor="@color/white"/>
+</RelativeLayout>

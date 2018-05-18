@@ -6,12 +6,18 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.projection.MediaProjection;
+import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 
+import java.io.File;
+import java.io.FileNotFoundException;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.text.SimpleDateFormat;
 import java.util.Arrays;
+import java.util.Date;
 
 import east.orientation.caster.cast.CastScreenService;
 import east.orientation.caster.local.Common;
@@ -50,13 +56,13 @@ public class ScreenRecorder  {
 
     private int mIndexFps;
 
+
     public void start(){
         mediaProjection = CastScreenService.getMediaProjection();
 
         mIndexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
         mIndexBitrate = SharePreferenceUtil.get(getAppContext(),Common.KEY_BITRATE,0);
         mIndexFps = SharePreferenceUtil.get(getAppContext(),Common.KEY_FPS,0);
-
 
         if(mediaProjection == null){
             return;
@@ -72,7 +78,7 @@ public class ScreenRecorder  {
         // https://stackoverflow.com/questions/36578660/android-mediaformatkey-repeat-previous-frame-after-setting
         mediaFormat.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER,  (VideoConfig.DEFAULT_I_FRAME_INTERVAL*2000000)/VideoConfig.FPS_OPTIONS[mIndexFps]);
         // ------------------------------------------------------------------------------------------------
-        mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_VBR);
+        mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
         mediaFormat.setInteger(MediaFormat.KEY_COMPLEXITY, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
         try {
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
@@ -80,7 +86,7 @@ public class ScreenRecorder  {
             mVideoCodec.setCallback(new MediaCodec.Callback() {
                 @Override
                 public void onInputBufferAvailable(MediaCodec codec, int inputBufferId) {
-                    Log.e(TAG,"onInputBufferAvailable");
+                    Log.d(TAG,"onInputBufferAvailable");
                 }
                 @Override
                 public void onOutputBufferAvailable(MediaCodec codec, int outputBufferId, MediaCodec.BufferInfo info) {
@@ -101,11 +107,9 @@ public class ScreenRecorder  {
 
 //                        Log.e(TAG,"录屏 .."+b.length+" == is key "+isIFrame(frame));
                         // 添加数据到队列
-                        Log.e(TAG,"TcpSender 添加");
                         getAppInfo().getScreenVideoStream().add(b);
-//                        if(getAppInfo().getConnectionManager() != null && getAppInfo().getConnectionManager().isConnect()){
-//                            getAppInfo().getConnectionManager().send(new VideoCastRequest(b));
-//                        }
+                        //Log.i("@@","video add:"+getAppInfo().getScreenVideoStream().size()+ " "+new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS") .format(new Date() ));
+
                     }
                     if (mVideoCodec != null) {
                         mVideoCodec.releaseOutputBuffer(outputBufferId, false);

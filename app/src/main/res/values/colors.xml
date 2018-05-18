@@ -156,5 +156,8 @@
     <color name="navy">#000080</color> <!--海军色 -->
     <color name="black">#000000</color> <!--黑色 -->
 
-
+    <color name="colorBackground">#007FFF</color>
+    <color name="colorEditText">#333333</color>
+    <color name="colorBtnNormal">#0059B2</color>
+    <color name="colorBtnPressed">#006CD9</color>
 </resources>

@@ -5,7 +5,7 @@
     android:id="@+id/content"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    tools:context="east.orientation.caster.ui.MainActivity">
+    tools:context="east.orientation.caster.ui.activity.MainActivity">
 
     <RelativeLayout
         android:id="@+id/rl_content"
@@ -27,7 +27,7 @@
                 android:layout_weight="1"
                 android:drawableTop="@mipmap/ic_pen"
 
-                android:text="画笔" />
+                android:text="@string/main_pen" />
 
             <Button
                 android:id="@+id/btn_res"
@@ -36,7 +36,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableTop="@mipmap/ic_res"
-                android:text="资源" />
+                android:text="@string/main_res" />
 
             <Button
                 android:id="@+id/btn_castToLarge"
@@ -45,7 +45,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableTop="@mipmap/ic_cast_large"
-                android:text="投屏" />
+                android:text="@string/main_cast" />
 
 
             <Button
@@ -55,7 +55,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableTop="@mipmap/ic_stu_screen"
-                android:text="演示" />
+                android:text="@string/main_castStuScreen" />
 
             <Button
                 android:id="@+id/btn_castToAll"
@@ -64,7 +64,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableTop="@mipmap/ic_cast_all"
-                android:text="广播" />
+                android:text="@string/main_castToAll" />
 
             <Button
                 android:id="@+id/btn_setting"
@@ -73,7 +73,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableTop="@mipmap/ic_setting"
-                android:text="设置" />
+                android:text="@string/main_setting" />
 
             <TextView
                 android:id="@+id/tv_connect_state"
@@ -91,7 +91,7 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:drawableTop="@mipmap/ic_exit"
-                android:text="退出" />
+                android:text="@string/main_exit" />
         </LinearLayout>
 
         <ImageView
@@ -100,7 +100,7 @@
             android:layout_height="match_parent"
             android:layout_below="@+id/ll_menu"
             android:scaleType="center"
-            android:src="@mipmap/back" />
+            android:src="@mipmap/background" />
         <!--<android.support.v4.widget.SwipeRefreshLayout-->
         <!--android:id="@+id/refresh_stu_list"-->
         <!--android:layout_width="match_parent"-->

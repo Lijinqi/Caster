@@ -39,5 +39,52 @@
         <item name="fab_colorRipple">#62B2FF</item>
     </style>
 
+    <style name="rtl_RecyclerTabLayout">
+        <item name="rtl_tabMinWidth">72dp</item>
+        <item name="rtl_tabMaxWidth">264dp</item>
+        <item name="rtl_tabIndicatorColor">?attr/colorAccent</item>
+        <item name="rtl_tabIndicatorHeight">2dp</item>
+        <item name="rtl_tabPaddingStart">12dp</item>
+        <item name="rtl_tabPaddingEnd">12dp</item>
+        <item name="rtl_tabBackground">?attr/selectableItemBackground</item>
+        <item name="rtl_tabTextAppearance">@style/rtl_RecyclerTabLayout.Tab</item>
+        <item name="rtl_tabSelectedTextColor">?android:textColorPrimary</item>
+    </style>
 
+    <style name="rtl_RecyclerTabLayout.Tab">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">?android:textColorSecondary</item>
+        <item name="textAllCaps">true</item>
+    </style>
+
+    <style name="RecyclerTabLayoutTheme">
+        <item name="android:textColorSecondary">@color/royalblue</item>
+    </style>
+
+    <style name="RecyclerTabLayoutTheme.Basic"></style>
+
+    <!-- Login -->
+    <style name="Login_Edit_Style" parent="Theme.AppCompat.Light">
+        <item name="colorControlNormal">@color/colorPrimary</item>
+        <item name="colorControlActivated">@color/colorBackground</item>
+    </style>
+
+
+    <!--浮动标签-->
+    <style name="hintAppearance" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@color/colorPrimary</item>
+    </style>
+
+    <!--错误提示信息-->
+    <style name="errorAppearance" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@android:color/holo_red_light</item>
+    </style>
+
+    <!--超出计数最大长度,浮动标签,下划线,计数文字都会改变颜色-->
+    <style name="counterOverflowTextAppearance" parent="TextAppearance.AppCompat">
+        <item name="android:textSize">14sp</item>
+        <item name="android:textColor">@android:color/holo_red_dark</item>
+    </style>
 </resources>

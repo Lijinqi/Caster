@@ -1,12 +1,14 @@
 package east.orientation.caster.cast;
 
-import com.xuhao.android.libsocket.utils.BytesUtils;
+import android.util.Log;
 
+import com.xuhao.android.libsocket.utils.BytesUtils;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
 
 import east.orientation.caster.local.Common;
+
 
 /**
  * Created by ljq on 2018/4/11.
@@ -14,13 +16,15 @@ import east.orientation.caster.local.Common;
  */
 
 public class Waiter {
-    private static final String DEFAULT_CAST_IP = "236.1.1.168";
+    private static final String DEFAULT_CAST_IP = "224.0.0.251";
     private static final int DEFAULT_CAST_PORT = 3388;
 
     //===========================================
     private static  Waiter instance = new Waiter() ;
 
-    private Waiter(){}
+    private Waiter(){
+
+    }
 
     public static Waiter getInstance(){
         return instance;
@@ -49,16 +53,20 @@ public class Waiter {
         @Override
         public void run() {
             try {
-                mMulticastSocket = new MulticastSocket(DEFAULT_CAST_PORT);
+
                 InetAddress address = InetAddress.getByName(DEFAULT_CAST_IP);
+                mMulticastSocket = new MulticastSocket(DEFAULT_CAST_PORT);
+
                 mMulticastSocket.joinGroup(address);
 
                 byte[] revBytes = new byte[24];
                 DatagramPacket packet = new DatagramPacket(revBytes,revBytes.length,address,DEFAULT_CAST_PORT);
+
                 while (isSearching){
                     mMulticastSocket.receive(packet);
                     parserData(packet);
                 }
+                Log.i("@@","-end-");
             } catch (Exception e) {
                 e.printStackTrace();
             }
@@ -98,6 +106,7 @@ public class Waiter {
         synchronized (mLock){
             mSearchThread.interrupt();
             isSearching = false;
+            //lock.release();
         }
     }
 

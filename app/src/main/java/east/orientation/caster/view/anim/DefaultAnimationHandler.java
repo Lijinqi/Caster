@@ -20,7 +20,7 @@ import east.orientation.caster.view.FloatingActionMenu;
 public class DefaultAnimationHandler extends MenuAnimationHandler {
 
     /** duration of animations, in milliseconds */
-    protected static final int DURATION = 500;
+    protected static final int DURATION = 800;
     /** duration to wait between each of  */
     protected static final int LAG_BETWEEN_ITEMS = 20;
     /** holds the current state of animation */

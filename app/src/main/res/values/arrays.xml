@@ -54,14 +54,14 @@
 
     <!--bitrate-->
     <string-array name="bitrate">
-        <item>600k bps</item>
-        <item>800k bps</item>
-        <item>1M bps</item>
         <item>2M bps</item>
+        <item>1M bps</item>
+        <item>800k bps</item>
     </string-array>
 
     <!--fps-->
     <string-array name="fps">
+        <item>10</item>
         <item>15</item>
         <item>30</item>
         <item>60</item>

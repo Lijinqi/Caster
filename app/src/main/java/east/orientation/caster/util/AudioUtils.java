@@ -70,7 +70,7 @@ public class AudioUtils {
         if(audioConfiguration.channelCount == 2) {
             channelConfiguration = AudioFormat.CHANNEL_IN_STEREO;
         }
-        int audioSource = MediaRecorder.AudioSource.REMOTE_SUBMIX;
+        int audioSource = MediaRecorder.AudioSource.MIC;
         if(audioConfiguration.aec) {
             audioSource = MediaRecorder.AudioSource.VOICE_COMMUNICATION;
         }

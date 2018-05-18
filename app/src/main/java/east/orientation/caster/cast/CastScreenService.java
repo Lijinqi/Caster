@@ -31,7 +31,7 @@ import east.orientation.caster.R;
 
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
-import east.orientation.caster.ui.MainActivity;
+import east.orientation.caster.ui.activity.MainActivity;
 import east.orientation.caster.util.ToastUtil;
 import east.orientation.caster.view.WindowFloatManager;
 
@@ -197,7 +197,7 @@ public class CastScreenService extends Service {
                                 break;
                             case WifiManager.WIFI_STATE_DISABLING:
                                 //关闭中
-                                getAppInfo().getConnectionManager().disConnect();
+                                getAppInfo().getConnectionManager().disconnect();
                                 break;
                             case WifiManager.WIFI_STATE_UNKNOWN:
                                 //未知
@@ -217,7 +217,7 @@ public class CastScreenService extends Service {
                 //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
                 WindowFloatManager.getInstance().showFloatMenus();
             }
-        },500);
+        },100);
 
         // 开启发送帧数据线程
         FrameSender.start();
@@ -245,6 +245,8 @@ public class CastScreenService extends Service {
      */
     private void serviceStartStreaming() {
         if (getAppInfo().isStreamRunning()) return;
+        //
+        WindowFloatManager.getInstance().showOrHideScrollView(true);
         stopForeground(true);
         mCastServiceHandler.obtainMessage(mCastServiceHandler.HANDLER_START_STREAMING).sendToTarget();
         startForeground(NOTIFICATION_STOP_STREAMING, getCustomNotification(NOTIFICATION_STOP_STREAMING));
@@ -257,6 +259,8 @@ public class CastScreenService extends Service {
     private void serviceStopStreaming() {
         if (!getAppInfo().isStreamRunning()) return;
         //stopForeground(true);
+        //
+        WindowFloatManager.getInstance().showOrHideScrollView(false);
         mCastServiceHandler.obtainMessage(CastServiceHandler.HANDLER_STOP_STREAMING).sendToTarget();
         startForeground(NOTIFICATION_START_STREAMING, getCustomNotification(NOTIFICATION_START_STREAMING));
         if (mMediaProjection != null) {
@@ -360,7 +364,7 @@ public class CastScreenService extends Service {
     }
 
     public static void stopService() {
-        Log.d(TAG, "录屏服务结束");
+        Log.i(TAG, "录屏服务结束");
         sServiceInstance.stopSelf();
     }
 
@@ -397,11 +401,11 @@ public class CastScreenService extends Service {
         FrameSender.stop();
 
         if (getAppInfo().getConnectionManager() != null){
-            getAppInfo().getConnectionManager().disConnect();
+            getAppInfo().getConnectionManager().disconnect();
         }
 
         EventBus.getDefault().unregister(this);
         super.onDestroy();
-        Log.e(TAG,"onDestroy");
+        Log.i(TAG,"service onDestroy");
     }
 }

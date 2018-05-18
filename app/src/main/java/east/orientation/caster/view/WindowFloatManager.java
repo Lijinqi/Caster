@@ -3,21 +3,23 @@ package east.orientation.caster.view;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.app.AppOpsManager;
+import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
+import android.content.res.Resources;
+import android.graphics.Color;
+import android.graphics.PixelFormat;
 import android.os.Binder;
 import android.os.Build;
-import android.os.Handler;
-import android.os.Looper;
-import android.os.Message;
 import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.util.DisplayMetrics;
+import android.util.Log;
+import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
-import android.view.animation.LinearInterpolator;
-import android.widget.AdapterView;
+import android.view.animation.AccelerateDecelerateInterpolator;
 import android.widget.ImageView;
 
 import org.greenrobot.eventbus.EventBus;
@@ -26,13 +28,22 @@ import java.lang.reflect.Method;
 
 import east.orientation.caster.R;
 import east.orientation.caster.evevtbus.CastMessage;
-import east.orientation.caster.ui.MainActivity;
-import east.orientation.caster.ui.SettingActivity;
-import east.orientation.caster.ui.WriteActivity;
+import east.orientation.caster.local.Common;
+import east.orientation.caster.local.VideoConfig;
+import east.orientation.caster.ui.activity.MainActivity;
+import east.orientation.caster.ui.activity.ResActivity;
+import east.orientation.caster.ui.activity.SettingActivity;
+import east.orientation.caster.ui.activity.WriteActivity;
 import east.orientation.caster.util.FloatWindowPermissionChecker;
 import east.orientation.caster.util.RomUtils;
+import east.orientation.caster.util.SharePreferenceUtil;
 import east.orientation.caster.util.ToastUtil;
 
+import static android.view.Surface.ROTATION_270;
+import static android.view.Surface.ROTATION_90;
+import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+import static android.view.WindowManager.LayoutParams.TYPE_PHONE;
+import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_TRY_START;
@@ -51,11 +62,24 @@ public class WindowFloatManager {
     private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_cast_large,R.mipmap.ic_stu_screen,R.mipmap.ic_cast_all,R.mipmap.ic_setting};
     private int[] mIconsId;
 
+    private double px;// 大屏 H / W
+    private int mStatusBarHeight;
+    private int mNavigationbarHeight;
 
-    private Handler mHandler = new Handler(Looper.getMainLooper()) {
+    private int mScreenWidth;// &录屏 分辨率W
+    private int mScreenHeight;// &录屏 分辨率H
+    private int mRectHeight;// 选中区域高度
+
+    private boolean isInit;// 是否初始化
+    private int mStartLine;// 起始位置
+    private LineStartChangeListener mLineStartChangeListener;
+    private View mLine;
+    private WindowManager.LayoutParams mLineParams;
+    private PureVerticalSeekBar mSeekBar;
+    private WindowManager.LayoutParams mSeekParams;
+    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
-        public void handleMessage(Message msg) {
-            super.handleMessage(msg);
+        public void onReceive(Context context, Intent intent) {
 
         }
     };
@@ -63,6 +87,8 @@ public class WindowFloatManager {
     private WindowFloatManager(Context context){
         mContext = context;
         sWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
+        sDisplayMetrics = new DisplayMetrics();
+        sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
         mIconsId = DEFAULT_ICONS;
     }
 
@@ -85,7 +111,13 @@ public class WindowFloatManager {
         return sWindowManager;
     }
 
-
+    public static DisplayMetrics getDisplayMetrics(){
+        if (sDisplayMetrics == null){
+            sDisplayMetrics = new DisplayMetrics();
+            sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
+        }
+        return sDisplayMetrics;
+    }
 
     /**
      * 设置图标资源
@@ -95,6 +127,153 @@ public class WindowFloatManager {
             mIconsId = iconsId;
     }
 
+    public void setLineStartChangeListener(LineStartChangeListener listener){
+        mLineStartChangeListener = listener;
+    }
+
+    public void setScreen(){
+        if (!isInit) return;
+        sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
+        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
+        mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
+        mScreenHeight = VideoConfig.RESOLUTION_OPTIONS[1][indexSize];
+        mRectHeight = (int) (mScreenWidth * px);// 根据录屏分辨率算
+        // 更改大屏实际播放分辨率
+        int left,top,right,bottom;
+        left = 0;
+        right = mScreenWidth;
+        bottom = (int) (mScreenHeight * ((double)mLineParams.y  / (double)(sDisplayMetrics.heightPixels- mStatusBarHeight)));
+        top = bottom - mRectHeight;
+        Log.e("@@@","top: "+top+ " bottom: "+bottom+" y "+mLineParams.y+ " s_H :"+mScreenHeight+" hPx: "+sDisplayMetrics.heightPixels+" rectH: "+mRectHeight);
+        if (mLineStartChangeListener != null){
+            mLineStartChangeListener.onChange(left,top,right,bottom);
+        }
+
+        if (getAppInfo().isStreamRunning())
+            showOrHideScrollView(true);
+    }
+
+    public void setHorizontal(){
+        if (!isInit) return;
+        sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
+        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
+        mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
+        mScreenHeight = VideoConfig.RESOLUTION_OPTIONS[1][indexSize];
+        int left,top,right,bottom;
+        left = 0;
+        right = mScreenWidth;
+        bottom = mScreenHeight;
+        top = 0;
+        Log.e("@@@","top: "+top+ " bottom: "+bottom+" y "+mLineParams.y+ " s_H :"+mScreenHeight+" hPx: "+sDisplayMetrics.heightPixels+" rectH: "+mRectHeight);
+        if (mLineStartChangeListener != null){
+            mLineStartChangeListener.onChange(left,top,right,bottom);
+        }
+        showOrHideScrollView(false);
+    }
+
+    public void initScroll(int large_width,int large_height){
+        if (mLine != null){
+            sWindowManager.removeView(mLine);
+        }
+        if (mSeekBar != null){
+            sWindowManager.removeView(mSeekBar);
+        }
+        px = (double)large_height / (double)large_width;
+        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
+        mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
+        mScreenHeight = VideoConfig.RESOLUTION_OPTIONS[1][indexSize];
+
+        // 得到状态栏 和 底部 操作栏高度
+        getStatusAndNavigationHeight();
+
+        mRectHeight = (int) (mScreenWidth * px);// 根据录屏分辨率算
+        if (isROTATION_0()){
+            mStartLine = (int) (sDisplayMetrics.widthPixels * px - mStatusBarHeight);// 根据实际分辨率计算
+        }else {
+            mStartLine = (int) ((sDisplayMetrics.heightPixels+mNavigationbarHeight) * px - mStatusBarHeight);// 根据实际分辨率计算
+        }
+
+
+        mLine = new View(mContext);
+        mLine.setBackgroundColor(Color.RED);
+        mLineParams = getDefaultSystemWindowParams();
+        mLineParams.gravity = Gravity.LEFT | Gravity.TOP;
+        mLineParams.width = sDisplayMetrics.widthPixels;
+        mLineParams.height = 2;
+        mLineParams.y = mStartLine;
+
+        mSeekBar = new PureVerticalSeekBar(mContext);
+        //mSeekBar.setColor(mContext.getResources().getColor(R.color.aliceblue),mContext.getResources().getColor(R.color.blue));
+        mSeekBar.setImage_background(R.mipmap.app_launcher);
+        mSeekBar.setDragable(true);
+        mSeekBar.setOnSlideChangeListener(new PureVerticalSeekBar.OnSlideChangeListener() {
+            @Override
+            public void OnSlideChangeListener(View view, float progress) {
+                mLineParams.y = (int) ((sDisplayMetrics.heightPixels - mStartLine - mStatusBarHeight)*(progress/100) + mStartLine);
+
+                int left,top,right,bottom;
+                left = 0;
+                right = mScreenWidth;
+                bottom = (int) (mScreenHeight * ((double)mLineParams.y  / (double)(sDisplayMetrics.heightPixels- mStatusBarHeight)));
+                top = bottom - mRectHeight;
+                Log.i("@@","top: "+top+ " bottom: "+bottom+" y "+mLineParams.y+ " s_H :"+mScreenHeight+" hPx: "+sDisplayMetrics.heightPixels+" rectH: "+mRectHeight);
+                if (mLineStartChangeListener != null){
+                    mLineStartChangeListener.onChange(left,top,right,bottom);
+                }
+
+                mLineParams.y = mLineParams.y+mNavigationbarHeight;
+                if (mLineParams.y>sDisplayMetrics.heightPixels)
+                    mLine.setVisibility(View.GONE);
+                else
+                    mLine.setVisibility(View.VISIBLE);
+                sWindowManager.updateViewLayout(mLine,mLineParams);
+            }
+
+            @Override
+            public void onSlideStopTouch(View view, float progress) {
+
+            }
+        });
+
+        mSeekParams = getDefaultSystemWindowParams();
+        mSeekParams.x = 10;// 距离特定边距离 根据Gravity
+        mSeekParams.width = 50;
+        mSeekParams.height = sDisplayMetrics.heightPixels/3;
+
+        isInit = true;
+
+        if (isROTATION_0()){
+            setScreen();
+        }else {
+            setHorizontal();
+        }
+    }
+
+    private void getStatusAndNavigationHeight(){
+        Resources resources = mContext.getResources();
+
+        int resIdStatusbarHeight = resources.getIdentifier("status_bar_height", "dimen", "android");
+
+        if(resIdStatusbarHeight > 0){
+            mStatusBarHeight = resources.getDimensionPixelSize(resIdStatusbarHeight);//状态栏高度
+        }
+
+
+        int resIdShow = resources.getIdentifier("config_showNavigationBar", "bool", "android");
+        boolean hasNavigationBar = false;
+        if(resIdShow > 0){
+            hasNavigationBar = resources.getBoolean(resIdShow);//是否显示底部navigationBar
+        }
+        if(hasNavigationBar){
+            int resIdNavigationBar = resources.getIdentifier("navigation_bar_height", "dimen", "android");
+            if(resIdNavigationBar > 0){
+                mNavigationbarHeight = resources.getDimensionPixelSize(resIdNavigationBar);//navigationBar高度
+            }
+
+        }
+    }
+
+    /** 系统悬浮 */
     private FloatingActionButton mFloatingActionButton;
     private FloatingActionMenu mFloatingActionMenu;
 
@@ -111,7 +290,7 @@ public class WindowFloatManager {
         // 主按钮
         ImageView fabIcon = new ImageView(mContext);
         fabIcon.setScaleType(ImageView.ScaleType.CENTER_CROP);
-        fabIcon.setImageDrawable(mContext.getResources().getDrawable(R.mipmap.app_launcher));
+        fabIcon.setImageDrawable(mContext.getResources().getDrawable(R.mipmap.snow));
 
         SubActionButton.Builder subBuilder = new SubActionButton.Builder(mContext);
         FloatingActionMenu.Builder menuBuilder = new FloatingActionMenu.Builder(mContext,true);
@@ -132,20 +311,18 @@ public class WindowFloatManager {
             subButtons[i] = subBuilder.setContentView(menuIcons[i]).build();
             menuBuilder.addSubActionView(subButtons[i],subButtons[i].getLayoutParams().width,subButtons[i].getLayoutParams().height);
         }
-        menuBuilder.setStartAngle(0);
-        menuBuilder.setEndAngle(90);
+        menuBuilder.setStartAngle(180);
+        menuBuilder.setEndAngle(270);
         menuBuilder.attachTo(mFloatingActionButton);
-        menuBuilder.setActionViewLongPressListener(new FloatingActionMenu.ActionViewLongPressListener() {
-            @Override
-            public void onLongPressed(View actionView) {
-                if(!getAppInfo().isActivityRunning()){
-                    // 打开主页面
-                    Vibrator vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
-                    vibrator.vibrate(100);
-                    mContext.startActivity(new Intent(mContext, MainActivity.class)
-                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-                }
-            }
+        menuBuilder.setActionViewLongPressListener(actionView -> {
+//          if(!getAppInfo().isActivityRunning()){//判断是否已打开
+            // 打开主页面
+            Vibrator vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
+            vibrator.vibrate(100);
+            mContext.startActivity(new Intent(mContext, MainActivity.class)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+//          }
+
         });
         mFloatingActionMenu = menuBuilder.build();
 
@@ -155,70 +332,128 @@ public class WindowFloatManager {
         // actionView 动画
         PropertyValuesHolder pvhR = PropertyValuesHolder.ofFloat(View.ROTATION, 360);
         final ObjectAnimator animation = ObjectAnimator.ofPropertyValuesHolder(mFloatingActionButton, pvhR);
-        animation.setInterpolator(new LinearInterpolator());
-        animation.setRepeatCount(-1);
-        animation.setDuration(10);
-//        mFloatingActionMenu.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
-//            @Override
-//            public void onMenuOpened(FloatingActionMenu menu) {
-//                mFloatingActionButton.setRotation(0);
-//                animation.start();
-//            }
-//
-//            @Override
-//            public void onMenuClosed(FloatingActionMenu menu) {
-//                animation.cancel();
-//                mFloatingActionButton.setRotation(0);
-//            }
-//        });
+        animation.setInterpolator(new AccelerateDecelerateInterpolator());
+        animation.setDuration(800);
+        mFloatingActionMenu.setStateChangeListener(new FloatingActionMenu.MenuStateChangeListener() {
+            @Override
+            public void onMenuOpened(FloatingActionMenu menu) {
+
+                animation.start();
+            }
+
+            @Override
+            public void onMenuClosed(FloatingActionMenu menu) {
+                animation.start();
+
+            }
+        });
+    }
+
+    private boolean isPort;
+    public void showOrHideScrollView(boolean isShow){
+        if (isShow ){
+            if (isROTATION_0()){
+                Log.e("@@","竖");
+
+                if (!isPort && mLine!= null && mSeekBar != null){
+                    if (mLine.isAttachedToWindow()){
+                        sWindowManager.removeView(mLine);
+                    }
+                    if (mSeekBar.isAttachedToWindow()){
+                        sWindowManager.removeView(mSeekBar);
+                    }
+                    sWindowManager.addView(mLine,mLineParams);
+                    sWindowManager.addView(mSeekBar,mSeekParams);
+                }
+                isPort = true;
+            }else {
+                isPort = false;
+                Log.e("@@","横");
+            }
+        }else {
+            if (mLine!= null && mSeekBar != null){
+                Log.e("@@","no show");
+                if (mLine.isAttachedToWindow()){
+
+                    sWindowManager.removeView(mLine);
+                }
+                if (mSeekBar.isAttachedToWindow()){
+
+                    sWindowManager.removeView(mSeekBar);
+                }
+                isPort = false;
+            }
+        }
+    }
+
+    /**
+     * 是否竖屏
+     */
+    private boolean isROTATION_0(){
+        int rotation = sWindowManager.getDefaultDisplay().getRotation();
+        Log.e("@@","rotation "+rotation);
+        if (ROTATION_90 == rotation || ROTATION_270 == rotation)
+            return true;
+        else
+            return false;
     }
 
     private void setItemClickListener(SubActionButton[] subButtons) {
         // 画板
-        subButtons[0].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mContext.startActivity(new Intent(mContext, WriteActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            }
+        subButtons[0].setOnClickListener(v-> {
+            mContext.startActivity(new Intent(mContext, WriteActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+
         });
         // 资源
-        subButtons[1].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ToastUtil.show(mContext,"开发ing !");
-            }
+        subButtons[1].setOnClickListener(v-> {
+            mContext.startActivity(new Intent(mContext, ResActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+
         });
         // 投屏
-        subButtons[2].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
+        subButtons[2].setOnClickListener(v-> {
+            if (getAppInfo().isServerConnected()){
                 CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
                 if (stickyEvent == null || MESSAGE_STATUS_TCP_OK.equals(stickyEvent.getMessage())) {
                     EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
                 }
+            }else {
+                ToastUtil.show(mContext,"未连接服务器,请开启服务器！");
             }
         });
         // 演示
-        subButtons[3].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ToastUtil.show(mContext,"开发ing !");
-            }
+        subButtons[3].setOnClickListener(v-> {
+            ToastUtil.show(mContext,"开发ing !");
         });
         // 广播
-        subButtons[4].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                ToastUtil.show(mContext,"开发ing !");
-            }
+        subButtons[4].setOnClickListener(v-> {
+            ToastUtil.show(mContext,"开发ing !");
+
         });
         // 设置
-        subButtons[5].setOnClickListener(new View.OnClickListener() {
-            @Override
-            public void onClick(View v) {
-                mContext.startActivity(new Intent(mContext, SettingActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-            }
+        subButtons[5].setOnClickListener(v-> {
+            mContext.startActivity(new Intent(mContext, SettingActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         });
+    }
+
+    public static WindowManager.LayoutParams getDefaultSystemWindowParams() {
+        int paramType  = TYPE_PHONE;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            paramType = TYPE_APPLICATION_OVERLAY;
+        } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            paramType = TYPE_PHONE;
+        } else {
+            paramType = TYPE_SYSTEM_ALERT;
+        }
+
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams(
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                WindowManager.LayoutParams.WRAP_CONTENT,
+                paramType,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE ,
+                PixelFormat.TRANSLUCENT);
+        params.format = PixelFormat.RGBA_8888;
+        params.gravity = Gravity.CENTER | Gravity.LEFT;
+        return params;
     }
 
     /**
@@ -266,4 +501,8 @@ public class WindowFloatManager {
         return false;
     }
 
+    public interface LineStartChangeListener{
+        void onPrepare(int left,int top,int right,int bottom);
+        void onChange(int left,int top,int right,int bottom);
+    }
 }

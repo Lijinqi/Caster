@@ -2,8 +2,10 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
     package="east.orientation.caster"
-    android:sharedUserId="android.uid.system">
+    >
 
+    <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
+    <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
     <uses-permission android:name="android.permission.CAPTURE_AUDIO_OUTPUT"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"/>
@@ -15,7 +17,6 @@
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
     <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW"/>
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
@@ -29,17 +30,20 @@
         android:roundIcon="@mipmap/app_launcher"
         android:supportsRtl="true"
         android:theme="@style/AppTheme">
-        <activity android:name=".ui.MainActivity"
+        <activity android:name=".ui.activity.MainActivity"
             android:launchMode="singleInstance"
-            android:theme="@style/MainTheme">
+            android:theme="@style/MainTheme"
+            android:configChanges="keyboardHidden|orientation|screenSize"
+            >
             <intent-filter>
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
-        <activity android:name=".ui.WriteActivity" android:launchMode="singleTask" android:parentActivityName=".ui.MainActivity"/>
-        <activity android:name=".ui.SettingActivity" android:launchMode="singleTask" android:parentActivityName=".ui.MainActivity"/>
+        <activity android:name=".ui.activity.WriteActivity" android:launchMode="singleTask" android:parentActivityName=".ui.activity.MainActivity"/>
+        <activity android:name=".ui.activity.SettingActivity" android:launchMode="singleTask" android:parentActivityName=".ui.activity.MainActivity"/>
+        <activity android:name=".ui.activity.ResActivity" android:launchMode="singleTask" android:parentActivityName=".ui.activity.MainActivity"/>
 
         <service android:name=".cast.CastScreenService" android:exported="false"/>
     </application>

@@ -1,13 +1,8 @@
 package east.orientation.caster.cast;
 
-import android.util.Log;
-
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
-
-import east.orientation.caster.request.AudioCastRequest;
-import east.orientation.caster.request.VideoCastRequest;
-
+import east.orientation.caster.cast.request.AudioCastRequest;
+import east.orientation.caster.cast.request.BaseRequest;
+import east.orientation.caster.cast.request.VideoCastRequest;
 
 import static east.orientation.caster.CastApplication.getAppInfo;
 
@@ -21,24 +16,24 @@ public class FrameSender {
     private static SendThread mSendThread;
     private static volatile boolean isRunning;
 
-    private final ExecutorService mClientThreadPool = Executors.newCachedThreadPool();
-
     private static class SendThread extends Thread{
         @Override
         public void run() {
             while (!isInterrupted()){
                 if(!isRunning) break;
                 byte[] videoStream = getAppInfo().getScreenVideoStream().poll();
-                if(videoStream != null){
-                    // 发送video数据
-                    Log.e(TAG,"TcpSender video:"+videoStream.length);
-                    getAppInfo().getConnectionManager().send(new VideoCastRequest(videoStream));
-                }
                 byte[] audioStream = getAppInfo().getAudioStream().poll();
-                if(audioStream != null){
+
+                if(videoStream != null && getAppInfo().getConnectionManager() != null){
+                    // 发送video数据
+                    getAppInfo().getConnectionManager().send(new VideoCastRequest(videoStream));
+//                    Log.i("@@","video send:"+getAppInfo().getScreenVideoStream().size()+ " "+new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS") .format(new Date() ));
+                }
+                if(audioStream != null&& getAppInfo().getConnectionManager() != null){
                     // 发送audio数据
-                    Log.e(TAG,"TcpSender  audio:"+audioStream.length);
                     getAppInfo().getConnectionManager().send(new AudioCastRequest(audioStream));
+//                    Log.i("@@"," audio send:"+getAppInfo().getAudioStream().size()+" "+new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS") .format(new Date() ));
+
                 }
             }
         }

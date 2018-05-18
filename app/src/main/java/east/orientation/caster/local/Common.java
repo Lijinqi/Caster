@@ -33,14 +33,16 @@ public class Common  {
     public static final int FLAG_STOP_CAST = 0x2004;// 关闭投屏
     public static final int FLAG_VIDEO_STREAM = 0x2005;// 视频帧数据流
     public static final int FLAG_AUDIO_STREAM = 0x2006;// 音频数据流
-    public static final int FLAG_MP3_PARAM_REQUEST = 0x2007;// mp3参数请求
+    public static final int FLAG_MP3_PARAM_REQUEST = 0x2007;// 大屏mp3参数请求
     public static final int FLAG_MP3_PARAM_RESPONSE = 0x2008;// mp3参数设置
+    public static final int FLAG_SCREEN_CUT_SIZE_REQUEST = 0x2009;//请求大屏分辨率
+    public static final int FLAG_SCREEN_LARGE_SIZE_RESPONSE = 0x2010;//大屏回复  携带分辨率
+    public static final int FLAG_SCREEN_CUT_SIZE_RESPONSE = 0x2011;//回复大屏  Rect坐标
 
     /**********************************************************/
     /**投屏相关常量**/
     /**********************************************************/
 
-    public static final int DEFAULT_PORT = 28888;
     public static final String NOTIFICATION_CHANNEL_ID = "com.lijinqi.castscreenservice.NOTIFICATION_CHANNEL_01";
     public static final int NOTIFICATION_START_STREAMING = 10;
     public static final int NOTIFICATION_STOP_STREAMING = 11;
@@ -65,4 +67,29 @@ public class Common  {
     public static final String KEY_SIZE = "key_size";
     public static final String KEY_BITRATE = "key_bitrate";
     public static final String KEY_FPS = "key_fps";
+
+    // 网络资源相关
+    public static final String KEY_SELECT_GROUP_POS = "key_select_group_pos";
+    public static final String KEY_SELECT_CHILD_POS = "key_select_child_pos";
+
+    // 同步资源相关
+    public static final String KEY_ACCOUNT = "key_account";
+    public static final String KEY_PASSWD = "key_passwd";
+
+    public static final String CMD_LOGIN = "login";
+    public static final String CMD_FILE_UP = "fileup";
+    public static final String CMD_FILE_QUERY = "filequery";
+    public static final String CMD_FILE_DOWN = "filedown";
+
+    public static final int CMD_LOGIN_ID = 1;
+    public static final int CMD_FILE_UP_ID = 2;
+    public static final int CMD_FILE_QUERY_ID = 3;
+    public static final int CMD_FILE_DOWN_ID = 4;
+
+    public static final int CMD_RESPONSE_SUCCESS = 1;
+    public static final int CMD_RESPONSE_FAILED = 0;
+
+    public static final int CMD_FILE_DOWN_HEAD = 1;
+    public static final int CMD_FILE_DOWN_CONTENT = 2;
+    public static final int CMD_FILE_DOWN_FINISH = 3;
 }

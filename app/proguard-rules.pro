@@ -42,7 +42,8 @@
 -keep class com.xuhao.android.socket.impl.ManagerHolder { *; }
 -keep class com.xuhao.android.socket.interfaces.** { *; }
 -keep class com.xuhao.android.socket.sdk.** { *; }
- # 枚举类不能被混淆
+
+
 -keepclassmembers enum * {
     public static **[] values();
     public static ** valueOf(java.lang.String);
@@ -53,3 +54,5 @@
 -keep class com.xuhao.android.libsocket.sdk.OkSocketSSLConfig$* {
     *;
 }
+
+# -ignorewarnings -keep class * { public private *; }

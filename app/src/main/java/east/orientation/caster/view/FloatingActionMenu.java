@@ -131,6 +131,43 @@ public class FloatingActionMenu {
 
         // Listen click events on the main action view
         // In the future, touch and drag events could be listened to offer an alternative behaviour
+        GestureDetector detector = new GestureDetector(this.mainActionView.getContext(), new GestureDetector.OnGestureListener() {
+            @Override
+            public boolean onDown(MotionEvent motionEvent) {
+
+                return false;
+            }
+
+            @Override
+            public void onShowPress(MotionEvent motionEvent) {
+
+            }
+
+            @Override
+            public boolean onSingleTapUp(MotionEvent motionEvent) {
+                // 动画
+                toggle(animated);
+                return false;
+            }
+
+            @Override
+            public boolean onScroll(MotionEvent motionEvent, MotionEvent motionEvent1, float v, float v1) {
+
+                return false;
+            }
+
+            @Override
+            public void onLongPress(MotionEvent motionEvent) {
+                // 长按
+                actionViewLongPressListener.onLongPressed(mainActionView);
+            }
+
+            @Override
+            public boolean onFling(MotionEvent motionEvent, MotionEvent motionEvent1, float v, float v1) {
+
+                return false;
+            }
+        });
         this.mainActionView.setClickable(true);
         this.mainActionView.setOnClickListener(new ActionViewClickListener());
         this.mainActionView.setOnTouchListener(new View.OnTouchListener() {
@@ -172,17 +209,18 @@ public class FloatingActionMenu {
                         break;
                     case MotionEvent.ACTION_UP:
                         // 如果手指离开屏幕时，xDownInScreen和xInScreen相等，且yDownInScreen和yInScreen相等，则视为触发了单击事件。
-                        if(Math.abs(xInScreen-xDownInScreen) < 2 && Math.abs(yInScreen-yDownInScreen) < 2){
-                            // 超短距离移动视为点击
-                            toggle(animated);
-                        }
+//                        if(Math.abs(xInScreen-xDownInScreen) < 2 && Math.abs(yInScreen-yDownInScreen) < 2){
+//                            // 超短距离移动视为点击
+//                            toggle(animated);
+//                        }
                         //
                         //mHandler.removeCallbacksAndMessages(null);
+
                         break;
                     default:
                         break;
                 }
-                return true;
+                return detector.onTouchEvent(event);
             }
         });
 
@@ -912,7 +950,7 @@ public class FloatingActionMenu {
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                paramType,
+                TYPE_PHONE,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE ,
                 PixelFormat.TRANSLUCENT);
         params.format = PixelFormat.RGBA_8888;

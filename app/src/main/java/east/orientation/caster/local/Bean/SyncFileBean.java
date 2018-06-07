@@ -16,6 +16,7 @@ public class SyncFileBean {
     private String time;
     private String path;
     private boolean isDownLoad;
+    private String type;
 
     public String getName() {
         return name;
@@ -82,5 +83,13 @@ public class SyncFileBean {
 
     public void setDownLoad(boolean downLoad) {
         isDownLoad = downLoad;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

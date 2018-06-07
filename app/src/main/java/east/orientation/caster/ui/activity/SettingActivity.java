@@ -9,13 +9,7 @@ import android.text.TextUtils;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.TextView;
-
-import com.stroke.Stroke;
-
-import org.w3c.dom.Text;
 
 import de.hdodenhof.circleimageview.CircleImageView;
 import east.orientation.caster.R;
@@ -78,70 +72,51 @@ public class SettingActivity extends AppCompatActivity {
                 new AlertDialog.Builder(this)
                         .setTitle("设置姓名")
                         .setView(input_content)
-                        .setPositiveButton("确认", new DialogInterface.OnClickListener() {
-                            @Override
-                            public void onClick(DialogInterface dialog, int which) {
+                        .setPositiveButton("确认", (dialogInterface, which) -> {
                                 String name = input.getText().toString();
                                 if (TextUtils.isEmpty(name)){
-                                    ToastUtil.show(getApplicationContext(),"用户名不能为空！");
+                                    ToastUtil.showToast("用户名不能为空！");
                                 }else{
                                     mTextName.setText(name);
                                     SharePreferenceUtil.put(getApplicationContext(),Common.KEY_NAME,name);
                                 }
-                            }
-                        })
-                        .show();
+                        }).show();
                 break;
             case R.id.ll_size:
                 new AlertDialog.Builder(this)
                         .setTitle("选择分辨率")
-                        .setItems(R.array.screen_size,
-                                new DialogInterface.OnClickListener() {
-
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
+                        .setItems(R.array.screen_size,(dialogInterface, which) -> {
                                         String size = getResources().getStringArray(R.array.screen_size)[which];
                                         if (!TextUtils.isEmpty(size)){
                                             mTextSize.setText(size);
                                             SharePreferenceUtil.put(getApplicationContext(),Common.KEY_SIZE,which);
-                                            ToastUtil.show(getApplicationContext(),"重新启动录屏生效！");
+                                            ToastUtil.showToast("重新启动录屏生效！");
                                         }
-                                    }
-                                }).show();
+                        }).show();
                 break;
             case R.id.ll_bitrate:
                 new AlertDialog.Builder(this)
                         .setTitle("选择比特率")
-                        .setItems(R.array.bitrate,
-                                new DialogInterface.OnClickListener() {
-
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
+                        .setItems(R.array.bitrate,(dialogInterface, which) -> {
                                         String bitrate = getResources().getStringArray(R.array.bitrate)[which];
                                         if (!TextUtils.isEmpty(bitrate)){
                                             mTextBitrate.setText(bitrate);
                                             SharePreferenceUtil.put(getApplicationContext(),Common.KEY_BITRATE,which);
-                                            ToastUtil.show(getApplicationContext(),"重新启动录屏生效！");
+                                            ToastUtil.showToast("重新启动录屏生效！");
                                         }
-                                    }
-                                }).show();
+                        }).show();
                 break;
             case R.id.ll_fps:
                 new AlertDialog.Builder(this)
                         .setTitle("选择帧率")
-                        .setItems(R.array.fps,
-                                new DialogInterface.OnClickListener() {
-
-                                    @Override
-                                    public void onClick(DialogInterface dialog, int which) {
-                                        String fps = getResources().getStringArray(R.array.fps)[which];
-                                        if (!TextUtils.isEmpty(fps)){
-                                            mTextFps.setText(fps);
-                                            SharePreferenceUtil.put(getApplicationContext(),Common.KEY_FPS,which);
-                                            ToastUtil.show(getApplicationContext(),"重新启动录屏生效！");
-                                        }
+                        .setItems(R.array.fps,(dialogInterface, which) -> {
+                                    String fps = getResources().getStringArray(R.array.fps)[which];
+                                    if (!TextUtils.isEmpty(fps)){
+                                        mTextFps.setText(fps);
+                                        SharePreferenceUtil.put(getApplicationContext(),Common.KEY_FPS,which);
+                                        ToastUtil.showToast("重新启动录屏生效！");
                                     }
-                                }).show();
+                        }).show();
                 break;
         }
     }

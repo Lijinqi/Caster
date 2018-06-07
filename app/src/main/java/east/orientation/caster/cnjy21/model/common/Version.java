@@ -27,6 +27,11 @@ public class Version {
 	 */
 	private Integer subjectId;
 
+	/**
+	 * 是否选中
+	 */
+	private boolean isSelected;
+
 	public Integer getVersionId() {
 		return versionId;
 	}
@@ -59,4 +64,11 @@ public class Version {
 		this.subjectId = subjectId;
 	}
 
+	public boolean isSelected() {
+		return isSelected;
+	}
+
+	public void setSelected(boolean selected) {
+		isSelected = selected;
+	}
 }

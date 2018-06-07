@@ -1,5 +1,6 @@
 package east.orientation.caster.cnjy21.model.document;
 
+import java.text.DecimalFormat;
 import java.util.List;
 
 import east.orientation.caster.cnjy21.model.common.Chapter;
@@ -90,6 +91,12 @@ public class Document {
 	 * 文件大小.
 	 */
 	private Long fileSize;
+
+	/**
+	 * 文件类型
+	 */
+	private String fileType;
+
 	/**
 	 * 资料来源.
 	 */
@@ -163,6 +170,14 @@ public class Document {
 
 	public void setFileSize(Long fileSize) {
 		this.fileSize = fileSize;
+	}
+
+	public String getFileType() {
+		return fileType;
+	}
+
+	public void setFileType(String fileType) {
+		this.fileType = fileType;
 	}
 
 	public String getSoftintro() {
@@ -277,4 +292,26 @@ public class Document {
 		this.intro = intro;
 	}
 
+	public String getFileSizeFormat(){
+		return FormatFileSize(fileSize);
+	}
+	/**
+	 * 转换文件大小
+	 *
+	 * @param fileS
+	 */
+	public String FormatFileSize(long fileS) {
+		DecimalFormat df = new DecimalFormat("#.00");
+		String fileSizeString = "";
+		if (fileS < 1024) {
+			fileSizeString = df.format((double) fileS) + "B";
+		} else if (fileS < 1048576) {
+			fileSizeString = df.format((double) fileS / 1024) + "K";
+		} else if (fileS < 1073741824) {
+			fileSizeString = df.format((double) fileS / 1048576) + "M";
+		} else {
+			fileSizeString = df.format((double) fileS / 1073741824) + "G";
+		}
+		return fileSizeString;
+	}
 }

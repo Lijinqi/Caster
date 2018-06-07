@@ -10,7 +10,7 @@ import static east.orientation.caster.CastApplication.getAppInfo;
  * Created by ljq on 2018/1/12.
  */
 
-public class FrameSender {
+public class CastFrameSender {
     private static final String TAG = "TcpSender";
     private static Object mLock = new Object();
     private static SendThread mSendThread;

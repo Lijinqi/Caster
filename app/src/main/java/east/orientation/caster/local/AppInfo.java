@@ -20,7 +20,6 @@ public class AppInfo {
     private volatile boolean isActivityRunning;// 是否在activity
     private volatile boolean isStreamRunning;// 是否在录屏
     private volatile boolean isServerConnected;// 是否连接服务器
-    private volatile boolean isLogin;// 是否已登录
     private IConnectionManager mConnectionManager;// 连接tcp管理器
 
     private ConcurrentLinkedDeque<byte[]> mScreenVideoStream = new ConcurrentLinkedDeque<>();

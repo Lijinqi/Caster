@@ -1,17 +1,22 @@
 package east.orientation.caster.cnjy21.request;
 
+import android.os.Environment;
+import android.util.Log;
+
 import com.vise.xsnow.http.ViseHttp;
 import com.vise.xsnow.http.callback.ACallback;
-import com.vise.xsnow.http.exception.ApiException;
-import com.vise.xsnow.http.mode.ApiCode;
+import com.vise.xsnow.http.mode.CacheMode;
+import com.vise.xsnow.http.mode.CacheResult;
+import com.vise.xsnow.http.mode.DownProgress;
 
-import java.util.ArrayList;
+import java.io.File;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
 import east.orientation.caster.cnjy21.constant.APIConstant;
 import east.orientation.caster.cnjy21.model.common.Book;
+import east.orientation.caster.cnjy21.model.common.Chapter;
 import east.orientation.caster.cnjy21.model.common.KnowledgePoint;
 import east.orientation.caster.cnjy21.model.common.Province;
 import east.orientation.caster.cnjy21.model.common.Subject;
@@ -22,14 +27,15 @@ import east.orientation.caster.cnjy21.model.question.Question;
 import east.orientation.caster.cnjy21.model.question.QuestionType;
 import east.orientation.caster.cnjy21.util.SignatureHelper;
 import east.orientation.caster.cnjy21.response.BaseResponse;
+import east.orientation.caster.local.Common;
 
 /**
  * Created by ljq on 2018/4/26.
  */
 
 public class ApiCommonService  {
-    private static int ERROR_CODE_NULL = 0x1001;
-    private static String NULL_ERROR_MSG = "NullPointerException";
+    public static int ERROR_NULL_CODE = 0x1001;
+    public static String ERROR_NULL_MSG = "NullPointerException";
 
     /**
      * 学段 1:小学     2:中学    3:高中
@@ -41,15 +47,30 @@ public class ApiCommonService  {
         Map<String,String> params = new HashMap<>();
         params.put("stage",String.valueOf(stage));
         setSignParams(params);
-        ViseHttp.GET(APIConstant.URL_SUBJECTS).tag("getSubjects")
+        ViseHttp.GET(APIConstant.URL_SUBJECTS)
+                .tag("getSubjects")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Subject>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Subject>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Subject>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Subject>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -75,14 +96,29 @@ public class ApiCommonService  {
         params.put("subjectId",String.valueOf(_subjectId));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_VERSIONS)
+                .tag("getVersions")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Version>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Version>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Version>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Version>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -100,19 +136,34 @@ public class ApiCommonService  {
      *            版本ID
      * @return
      */
-    public static void getBooks(final Integer _versionId,ACallback<List<Version>> callback) {
+    public static void getBooks(final Integer _versionId,ACallback<List<Book>> callback) {
         Map<String,String> params = new HashMap<>();
         params.put("versionId",String.valueOf(_versionId));
         setSignParams(params);
-        ViseHttp.GET(APIConstant.URL_VERSIONS)
+        ViseHttp.GET(APIConstant.URL_BOOKS)
+                .tag("getBooks")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Version>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Book>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Version>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Book>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -129,19 +180,34 @@ public class ApiCommonService  {
      * @param _bookId
      * @return
      */
-    public static void getChapters(final Integer _bookId,ACallback<List<Book>> callback)  {
+    public static void getChapters(final Integer _bookId,ACallback<List<Chapter>> callback)  {
         Map<String,String> params = new HashMap<>();
         params.put("bookId",String.valueOf(_bookId));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_CHAPTERS)
+                .tag("getChapters")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Book>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Chapter>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Book>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Chapter>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -167,14 +233,29 @@ public class ApiCommonService  {
         params.put("subjectId",String.valueOf(_subjectId));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_KNOWLEDGEPOINTS)
+                .tag("getKnowledgePoints")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<KnowledgePoint>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<KnowledgePoint>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<KnowledgePoint>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<KnowledgePoint>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -192,13 +273,28 @@ public class ApiCommonService  {
      */
     public static void getProvinces(ACallback<List<Province>> callback) {
         ViseHttp.GET(APIConstant.URL_PROVINCES)
-                .request(new ACallback<BaseResponse<List<Province>>>() {
+                .tag("getProvinces")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
+                .request(new ACallback<CacheResult<BaseResponse<List<Province>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Province>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Province>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -215,7 +311,7 @@ public class ApiCommonService  {
      * @param documents
      *            需要获取下载地址的文档
      */
-    public static void loadDocumentsDownurl(List<Document> documents , ACallback<List<Document>> callback) {
+    public static void getDocumentsDownurls(List<Document> documents , ACallback<List<Document>> callback) {
         if (documents == null || documents.size() == 0) {
             return;
         }
@@ -230,14 +326,29 @@ public class ApiCommonService  {
         params.put("itemIds",itemIds.toString());
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_DOCUMENT_DETAIL)
+                .tag("getDocumentsDownurls")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Document>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Document>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Document>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Document>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -259,14 +370,29 @@ public class ApiCommonService  {
         params.put("itemIds",String.valueOf(itemid));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_DOCUMENT_DETAIL)
+                .tag("getDocumentDownurl")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Document>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Document>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Document>> response) {
-                        if (response == null || response.getData() == null || response.getData().size() <= 0){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Document>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData().get(0));
+                            }
                         }else {
-                            callback.onSuccess(response.getData().get(0));
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData().get(0));
+                            }
                         }
                     }
 
@@ -287,23 +413,39 @@ public class ApiCommonService  {
      * @param perPage
      * @param callback
      */
-    public static void getDocuments(int stage,int subjectId,int chapterId,int page ,int perPage,ACallback<List<Document>> callback) {
+    public static void getDocuments(int stage,int subjectId,String chapterId, int page ,int perPage,ACallback<List<Document>> callback) {
         Map<String,String> params = new HashMap<>();
         params.put("stage",String.valueOf(stage));
         params.put("subjectId",String.valueOf(subjectId));
-        params.put("chapterId",String.valueOf(chapterId));
+        params.put("chapterId",chapterId);
+        //params.put("knowledgeId",knowledgeId);
         params.put("page",String.valueOf(page));
         params.put("perPage",String.valueOf(perPage));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_DOCUMENTS)
+                .tag("getDocuments")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Document>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Document>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Document>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Document>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -325,14 +467,29 @@ public class ApiCommonService  {
         params.put("itemId",String.valueOf(_itemId));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_DOCUMENT_PREVIEW)
+                .tag("getPreviews")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Preview>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Preview>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Preview>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Preview>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -352,25 +509,25 @@ public class ApiCommonService  {
      * @param subjectId	Number
      科目ID
 
-     * @param type	Number
+     * @param //type	Number
      试卷类型 (通过试卷类型接口获取)
 
-     * @param versionId	Number
+     * @param //versionId	Number
      教材版本ID
 
-     * @param province	Number
+     * @param //province	Number
      试卷所属省份(可通过公共接口 "获取省级地区数据" 获取)
 
-     * @param bookId	Number
+     * @param //bookId	Number
      教材册别ID
 
-     * @param categoryId	Number
+     * @param //categoryId	Number
      同步章节ID
 
-     * @param year	Number
+     * @param //year	Number
      试卷所属年份 (平台提供试卷资源自 2009 年开始)
 
-     * @param title	String
+     * @param //title	String
      搜索试卷标题关键词，关键词匹配的结果会在题干 title 中 使用 "<keyword> 关键词<\keyword>" 包裹，客户端可以直接操作该标签处理样式
 
      取值范围: 最大长度 255
@@ -391,14 +548,29 @@ public class ApiCommonService  {
         params.put("perPage",String.valueOf(perPage));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_QUESTIONS)
+                .tag("getQuestions")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Question>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Question>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Question>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Question>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -424,14 +596,29 @@ public class ApiCommonService  {
         params.put("subjectId",String.valueOf(_subjectId));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_QUESTION_TYPES)
+                .tag("getQuestionTypes")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<QuestionType>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<QuestionType>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<QuestionType>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<QuestionType>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -465,14 +652,29 @@ public class ApiCommonService  {
         params.put("questionIds",_questionIds.toString());
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_QUESTION_DETAIL)
+                .tag("getQuestionsAnswer")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Question>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Question>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Question>> response) {
-                        if (response == null || response.getData() == null){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Question>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }else {
-                            callback.onSuccess(response.getData());
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData());
+                            }
                         }
                     }
 
@@ -497,14 +699,29 @@ public class ApiCommonService  {
         params.put("questionId",String.valueOf(question.getQuestionId()));
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_QUESTION_DETAIL)
+                .tag("getQuestionAnswer")
+                .setLocalCache(true)
+                .cacheMode(CacheMode.FIRST_REMOTE)
                 .params(params)
-                .request(new ACallback<BaseResponse<List<Question>>>() {
+                .request(new ACallback<CacheResult<BaseResponse<List<Question>>>>() {
                     @Override
-                    public void onSuccess(BaseResponse<List<Question>> response) {
-                        if (response == null || response.getData() == null || response.getData().size() <= 0){
-                            callback.onFail(ERROR_CODE_NULL,NULL_ERROR_MSG);
+                    public void onSuccess(CacheResult<BaseResponse<List<Question>>> response) {
+                        if (response == null || response.getCacheData() == null) {
+                            return;
+                        }
+                        
+                        if (response.isCache()){
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData().get(0));
+                            }
                         }else {
-                            callback.onSuccess(response.getData().get(0));
+                            if (response.getCacheData().getData() == null){
+                                callback.onFail(ERROR_NULL_CODE, ERROR_NULL_MSG);
+                            }else {
+                                callback.onSuccess(response.getCacheData().getData().get(0));
+                            }
                         }
                     }
 
@@ -514,6 +731,32 @@ public class ApiCommonService  {
                     }
                 });
 
+    }
+
+    /**
+     * 下载资源
+     *
+     * @param url
+     * @param fileName
+     * @param callback
+     */
+    public static void downLoad(String url,String fileName,ACallback<DownProgress> callback){
+        File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        ViseHttp.DOWNLOAD(url)
+                .setFileName(fileName)//文件名
+                .setDirName(Common.SAVE_DIR_NAME)// 文件夹
+                .setRootName(file.getAbsolutePath())// 根目录
+                .request(new ACallback<DownProgress>() {
+                    @Override
+                    public void onSuccess(DownProgress response) {
+                        callback.onSuccess(response);
+                    }
+
+                    @Override
+                    public void onFail(int errCode, String errMsg) {
+                        callback.onFail(errCode,errMsg);
+                    }
+                });
     }
 
     /**

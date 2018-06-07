@@ -26,7 +26,6 @@ import east.orientation.caster.local.Bean.DirBean;
 
 public class ResLocalFragment extends BaseFragment {
     private String[] mDirs ;
-
     private RecyclerView mRecyclerView;
     private CommonAdapter<DirBean> mAdapter;
     private List<DirBean> mDirList = new ArrayList<>();

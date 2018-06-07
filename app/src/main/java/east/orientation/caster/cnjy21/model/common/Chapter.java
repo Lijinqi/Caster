@@ -39,6 +39,19 @@ public class Chapter {
 	 */
 	private String parentpath;
 
+	/**
+	 * 是否选中
+	 */
+	private boolean isSelected;
+
+	public boolean isSelected() {
+		return isSelected;
+	}
+
+	public void setSelected(boolean selected) {
+		isSelected = selected;
+	}
+
 	public Integer getId() {
 		return id;
 	}

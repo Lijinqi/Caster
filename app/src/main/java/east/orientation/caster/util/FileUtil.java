@@ -3,33 +3,113 @@ package east.orientation.caster.util;
 import android.content.Context;
 import android.content.Intent;
 import android.net.Uri;
+import android.os.Build;
+import android.support.v4.content.FileProvider;
 import android.util.Log;
 
 import java.io.File;
+import java.io.FileInputStream;
+import java.text.DateFormat;
+import java.text.DecimalFormat;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 
 /**
  * Created by ljq on 2018/5/11.
  */
 
-public class OpenFileUtil {
+public class FileUtil {
+
+    public static String getTime(long lastModified) {
+
+        DateFormat simpleDateFormat =  SimpleDateFormat.getDateTimeInstance();//new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+
+        Date date = new Date(lastModified);
+        return simpleDateFormat.format(date);
+
+    }
+
+    /**
+     * 获取文件大小
+     *
+     * @param file
+     * @return
+     */
+    public static String getFormatFileSize(File file){
+        try {
+            long size = getFileSize(file);
+            if (size>0){
+                return FormatFileSize(size);
+            }
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+        return "";
+    }
+
+    /**
+     * 获取指定文件大小
+     *
+     * @param file
+     * @return
+     * @throws Exception
+     */
+    public static long getFileSize(File file) throws Exception {
+        long size = 0;
+        if (file.exists()) {
+            FileInputStream fis = null;
+            fis = new FileInputStream(file);
+            size = fis.available();
+        } else {
+            file.createNewFile();
+            size = -1;
+        }
+        return size;
+    }
+
+    /**
+     * 转换文件大小
+     *
+     * @param fileS
+     */
+    public static String FormatFileSize(long fileS) {
+        DecimalFormat df = new DecimalFormat("#.00");
+        String fileSizeString = "";
+        if (fileS < 1024) {
+            fileSizeString = df.format((double) fileS) + "B";
+        } else if (fileS < 1048576) {
+            fileSizeString = df.format((double) fileS / 1024) + "K";
+        } else if (fileS < 1073741824) {
+            fileSizeString = df.format((double) fileS / 1048576) + "M";
+        } else {
+            fileSizeString = df.format((double) fileS / 1073741824) + "G";
+        }
+        return fileSizeString;
+    }
 
     //打开文件时调用
     public static void openFiles(Context context,String filesPath) {
-        Uri uri = Uri.parse("file://" + filesPath);
+        Uri uri;
         Intent intent = new Intent();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+            File file = new File(filesPath);
+            uri = FileProvider.getUriForFile(context,"east.orientation.caster.fileprovider",file);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }else {
+            uri = Uri.parse("file://" + filesPath);
+        }
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setAction(Intent.ACTION_VIEW);
-
         String type = getMIMEType(filesPath);
         intent.setDataAndType(uri, type);
         if (!type.equals("*/*")) {
             try {
                 context.startActivity(intent);
             } catch (Exception e) {
-                context.startActivity(showOpenTypeDialog(filesPath));
+                context.startActivity(showOpenTypeDialog(context,filesPath));
             }
         } else {
-            context.startActivity(showOpenTypeDialog(filesPath));
+            context.startActivity(showOpenTypeDialog(context,filesPath));
         }
     }
 
@@ -38,15 +118,22 @@ public class OpenFileUtil {
         Intent intent = new Intent();
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
         intent.setAction(Intent.ACTION_VIEW);
-        context.startActivity(showOpenTypeDialog(filesPath));
+        context.startActivity(showOpenTypeDialog(context,filesPath));
     }
 
-    public static Intent showOpenTypeDialog(String param) {
-        Log.e("ViChildError", "showOpenTypeDialog");
+    public static Intent showOpenTypeDialog(Context context,String path) {
         Intent intent = new Intent();
         intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
-        intent.setAction(android.content.Intent.ACTION_VIEW);
-        Uri uri = Uri.fromFile(new File(param));
+        intent.setAction(Intent.ACTION_VIEW);
+        File file = new File(path);
+        Uri uri;
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N){
+            uri = FileProvider.getUriForFile(context,"east.orientation.caster.fileprovider",file);
+            intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+        }else {
+            uri = Uri.parse("file://" + path);
+        }
+
         intent.setDataAndType(uri, "*/*");
         return intent;
     }

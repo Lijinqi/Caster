@@ -1,5 +1,9 @@
 package east.orientation.caster.local;
 
+import android.os.Environment;
+
+import java.io.File;
+
 /**
  * Created by ljq on 2018/3/8.
  */
@@ -9,6 +13,7 @@ public class Common  {
     /**手写板相关常量**/
     /**********************************************************/
     public static final String SAVE_DIR_NAME = "Caster";
+    public static final String DEFAULT_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator+Common.SAVE_DIR_NAME;;
 
 
     /**********************************************************/
@@ -69,10 +74,12 @@ public class Common  {
     public static final String KEY_FPS = "key_fps";
 
     // 网络资源相关
-    public static final String KEY_SELECT_GROUP_POS = "key_select_group_pos";
-    public static final String KEY_SELECT_CHILD_POS = "key_select_child_pos";
+
 
     // 同步资源相关
+    public static final String SYNC_SERVER_IP = "119.23.238.102";// 服务器ip
+    public static final int SYNC_SERVER_PORT = 8888;// 服务器端口
+
     public static final String KEY_ACCOUNT = "key_account";
     public static final String KEY_PASSWD = "key_passwd";
 
@@ -80,11 +87,19 @@ public class Common  {
     public static final String CMD_FILE_UP = "fileup";
     public static final String CMD_FILE_QUERY = "filequery";
     public static final String CMD_FILE_DOWN = "filedown";
+    public static final String CMD_FILE_DEL = "filedel";
+    public static final String CMD_FILE_QUERY_SYN = "filequery_syn";
+    public static final String CMD_FILE_DEL_SYN = "filedel_syn";
+    public static final String CMD_FILE_UPDATED_SYN = "fileupdated_syn";
 
     public static final int CMD_LOGIN_ID = 1;
     public static final int CMD_FILE_UP_ID = 2;
     public static final int CMD_FILE_QUERY_ID = 3;
     public static final int CMD_FILE_DOWN_ID = 4;
+    public static final int CMD_FILE_DEL_ID = 5;
+    public static final int CMD_FILE_QUERY_SYN_ID = 6;
+    public static final int CMD_FILE_DEL_SYN_ID = 7;
+    public static final int CMD_FILE_UPDATED_SYN_ID = 4;
 
     public static final int CMD_RESPONSE_SUCCESS = 1;
     public static final int CMD_RESPONSE_FAILED = 0;

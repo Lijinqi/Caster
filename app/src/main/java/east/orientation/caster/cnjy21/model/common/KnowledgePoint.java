@@ -37,6 +37,11 @@ public class KnowledgePoint {
 	 */
 	private List<KnowledgePoint> childs;
 
+	/**
+	 * 是否选中
+	 */
+	private boolean isSelected;
+
 	public Integer getId() {
 		return id;
 	}
@@ -85,4 +90,11 @@ public class KnowledgePoint {
 		this.childs = childs;
 	}
 
+	public boolean isSelected() {
+		return isSelected;
+	}
+
+	public void setSelected(boolean selected) {
+		isSelected = selected;
+	}
 }

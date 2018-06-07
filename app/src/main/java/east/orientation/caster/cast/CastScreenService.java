@@ -11,12 +11,15 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
+import android.net.NetworkInfo;
+import android.net.wifi.WifiInfo;
 import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
+import android.os.Parcelable;
 import android.os.Process;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
@@ -29,13 +32,16 @@ import org.greenrobot.eventbus.Subscribe;
 import east.orientation.caster.CastApplication;
 import east.orientation.caster.R;
 
+import east.orientation.caster.cast.request.SelectRectRequest;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.ui.activity.MainActivity;
 import east.orientation.caster.util.ToastUtil;
 import east.orientation.caster.view.WindowFloatManager;
 
+
 import static android.content.Intent.ACTION_SCREEN_OFF;
+import static android.net.wifi.WifiManager.NETWORK_STATE_CHANGED_ACTION;
 import static android.net.wifi.WifiManager.WIFI_STATE_CHANGED_ACTION;
 import static com.xuhao.android.libsocket.sdk.OkSocket.open;
 import static east.orientation.caster.CastApplication.getAppInfo;
@@ -53,7 +59,6 @@ import static east.orientation.caster.local.Common.NOTIFICATION_STOP_STREAMING;
  *
  * 投屏服务
  */
-
 public class CastScreenService extends Service {
     private static final String TAG = "CastScreenService";
 
@@ -142,7 +147,7 @@ public class CastScreenService extends Service {
                             }
                             Log.d(TAG, "start stream");
                         }else {
-                            ToastUtil.show(mAppContext,"未连接服务器,请连接服务器！");
+                            ToastUtil.showToast( "未连接服务器,请连接服务器！");
                         }
 
                         break;
@@ -153,7 +158,7 @@ public class CastScreenService extends Service {
                     case Common.ACTION_EXIT:
                         Log.d(TAG, "exit app");
                         stopService();
-                        CastApplication.getAppContext().AppExit();
+
 
                         break;
                 }
@@ -165,6 +170,7 @@ public class CastScreenService extends Service {
         IntentFilter screenOnOffAndWiFiFilter = new IntentFilter();
         screenOnOffAndWiFiFilter.addAction(ACTION_SCREEN_OFF);
         screenOnOffAndWiFiFilter.addAction(WIFI_STATE_CHANGED_ACTION);
+        screenOnOffAndWiFiFilter.addAction(NETWORK_STATE_CHANGED_ACTION);
 
         mBroadcastReceiver = new BroadcastReceiver() {
             @Override
@@ -180,22 +186,25 @@ public class CastScreenService extends Service {
                         switch (mWifiState ) {
                             case WifiManager.WIFI_STATE_ENABLED:
                                 //已打开
-
+                                Log.e(TAG,"已打开");
                                 break;
                             case WifiManager.WIFI_STATE_ENABLING:
                                 //打开中
+                                Log.e(TAG,"打开中");
                                 if (getAppInfo().getConnectionManager() != null ){
                                     getAppInfo().getConnectionManager().connect();
                                 }
                                 break;
                             case WifiManager.WIFI_STATE_DISABLED:
                                 //已关闭
-                                ToastUtil.show(getApplicationContext(),"WIFI未连接！");
+                                Log.e(TAG,"已关闭");
+                                ToastUtil.showToast("WIFI未连接！");
                                 if (getAppInfo().isStreamRunning()){
                                     serviceStopStreaming();
                                 }
                                 break;
                             case WifiManager.WIFI_STATE_DISABLING:
+                                Log.e(TAG,"关闭中");
                                 //关闭中
                                 getAppInfo().getConnectionManager().disconnect();
                                 break;
@@ -205,22 +214,46 @@ public class CastScreenService extends Service {
                                 break;
                         }
                         break;
+
+                    case NETWORK_STATE_CHANGED_ACTION:
+
+                        Parcelable parcelableExtra = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+                        WifiInfo wifiInfo = intent.getParcelableExtra(WifiManager.EXTRA_WIFI_INFO);
+                        String bssid = intent.getStringExtra(WifiManager.EXTRA_BSSID);
+                        if (null != parcelableExtra ) {
+                            NetworkInfo networkInfo = (NetworkInfo) parcelableExtra;
+                            NetworkInfo.State state = networkInfo.getState();
+
+                            if(state==NetworkInfo.State.DISCONNECTED){
+                                if (getAppInfo().getConnectionManager()!=null &&getAppInfo().getConnectionManager().isConnect() && !getAppInfo().getConnectionManager().isDisconnecting()){
+                                    getAppInfo().getConnectionManager().disconnect();
+                                    Log.e(TAG,"disconnect--");
+                                }
+                            }else if(state== NetworkInfo.State.CONNECTED){
+//                                if (getAppInfo().getConnectionManager()!=null && !getAppInfo().getConnectionManager().isConnect()){
+//                                    getAppInfo().getConnectionManager().connect();
+//                                    Log.e(TAG,"connect--");
+//                                }
+                            }
+                        }
+
+                        break;
                 }
             }
         };
         registerReceiver(mBroadcastReceiver, screenOnOffAndWiFiFilter);
 
-        // 显示悬浮框
-        mHandler.postDelayed(new Runnable() {
-            @Override
-            public void run() {
-                //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
-                WindowFloatManager.getInstance().showFloatMenus();
-            }
-        },100);
+//        // 显示悬浮框
+//        mHandler.postDelayed(new Runnable() {
+//            @Override
+//            public void run() {
+//                //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
+//                WindowFloatManager.getInstance().showFloatMenus();
+//            }
+//        },100);
 
         // 开启发送帧数据线程
-        FrameSender.start();
+        CastFrameSender.start();
 
         EventBus.getDefault().register(this);
     }
@@ -247,7 +280,9 @@ public class CastScreenService extends Service {
         if (getAppInfo().isStreamRunning()) return;
         //
         WindowFloatManager.getInstance().showOrHideScrollView(true);
-        stopForeground(true);
+        // 请求分辨率
+        getAppInfo().getConnectionManager().send(new SelectRectRequest());
+        //stopForeground(true);
         mCastServiceHandler.obtainMessage(mCastServiceHandler.HANDLER_START_STREAMING).sendToTarget();
         startForeground(NOTIFICATION_STOP_STREAMING, getCustomNotification(NOTIFICATION_STOP_STREAMING));
         if (mMediaProjection != null) mMediaProjection.registerCallback(mProjectionCallback, null);
@@ -398,14 +433,15 @@ public class CastScreenService extends Service {
             mNotificationManager.deleteNotificationChannel(Common.NOTIFICATION_CHANNEL_ID);
         }
 
-        FrameSender.stop();
+        CastFrameSender.stop();
 
         if (getAppInfo().getConnectionManager() != null){
             getAppInfo().getConnectionManager().disconnect();
         }
 
         EventBus.getDefault().unregister(this);
+        // 退出应用
+        CastApplication.getAppContext().AppExit();
         super.onDestroy();
-        Log.i(TAG,"service onDestroy");
     }
 }

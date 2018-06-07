@@ -6,6 +6,8 @@ import com.xuhao.android.libsocket.utils.BytesUtils;
 import java.net.DatagramPacket;
 import java.net.InetAddress;
 import java.net.MulticastSocket;
+import java.util.Timer;
+import java.util.TimerTask;
 
 import east.orientation.caster.local.Common;
 
@@ -15,18 +17,18 @@ import east.orientation.caster.local.Common;
  *
  */
 
-public class Waiter {
+public class CastWaiter {
     private static final String DEFAULT_CAST_IP = "224.0.0.251";
     private static final int DEFAULT_CAST_PORT = 3388;
 
     //===========================================
-    private static  Waiter instance = new Waiter() ;
+    private static CastWaiter instance = new CastWaiter() ;
 
-    private Waiter(){
+    private CastWaiter(){
 
     }
 
-    public static Waiter getInstance(){
+    public static CastWaiter getInstance(){
         return instance;
     }
     //============================================
@@ -53,7 +55,6 @@ public class Waiter {
         @Override
         public void run() {
             try {
-
                 InetAddress address = InetAddress.getByName(DEFAULT_CAST_IP);
                 mMulticastSocket = new MulticastSocket(DEFAULT_CAST_PORT);
 
@@ -61,14 +62,20 @@ public class Waiter {
 
                 byte[] revBytes = new byte[24];
                 DatagramPacket packet = new DatagramPacket(revBytes,revBytes.length,address,DEFAULT_CAST_PORT);
+                Log.e("@@","-receive -"+packet.getAddress());
+                mMulticastSocket.receive(packet);
+                parserData(packet);
 
-                while (isSearching){
-                    mMulticastSocket.receive(packet);
-                    parserData(packet);
-                }
-                Log.i("@@","-end-");
             } catch (Exception e) {
                 e.printStackTrace();
+                Log.e("@@","-receive err-"+e);
+                new Timer().schedule(new TimerTask() {
+                    @Override
+                    public void run() {
+                        CastWaiter.this.stop();
+                        CastWaiter.this.start();
+                    }
+                },1000);
             }
         }
     }
@@ -99,14 +106,17 @@ public class Waiter {
         synchronized (mLock){
             mSearchThread = new SearchThread();
             mSearchThread.start();
+            Log.e("@@","waiter start");
         }
     }
 
     public void stop(){
         synchronized (mLock){
             mSearchThread.interrupt();
+            //mSearchThread = null;
             isSearching = false;
             //lock.release();
+            Log.e("@@","waiter stop");
         }
     }
 

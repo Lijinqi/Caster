@@ -1,21 +1,15 @@
 package east.orientation.caster.ui.activity;
 
 import android.os.Bundle;
-import android.support.annotation.Nullable;
 import android.support.v4.app.FragmentActivity;
-import android.support.v4.app.FragmentManager;
 import android.support.v4.app.FragmentTransaction;
-import android.support.v7.app.AppCompatActivity;
-import android.util.Log;
 import android.view.View;
-import android.widget.FrameLayout;
 
 import east.orientation.caster.R;
 import east.orientation.caster.ui.fragment.BackHandlerHelper;
 import east.orientation.caster.ui.fragment.ResInternetFragment;
 import east.orientation.caster.ui.fragment.ResLocalFragment;
 import east.orientation.caster.ui.fragment.ResSyncFragment;
-import east.orientation.caster.util.ToastUtil;
 
 
 /**
@@ -61,7 +55,8 @@ public class ResActivity extends FragmentActivity {
                 .add(R.id.layout_content,mResLocalFragment,ResLocalFragment.class.getName())
                 .hide(mResInternetFragment)
                 .hide(mResSyncFragment)
-                .hide(mResLocalFragment).commit();
+                .hide(mResLocalFragment)
+                .commit();
     }
 
     public void onClick(View v){

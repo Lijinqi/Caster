@@ -23,38 +23,16 @@
             android:layout_width="wrap_content"
             android:layout_height="match_parent"
             android:layout_centerHorizontal="true"/>
-        <TextView
-            android:id="@+id/tv_upLoad"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:textColor="@color/white"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
-            android:layout_alignParentRight="true"
-            android:text="@string/sync_res_upload"/>
-        <TextView
-            android:id="@+id/tv_login"
-            android:layout_width="wrap_content"
-            android:layout_height="match_parent"
-            android:gravity="center"
-            android:textColor="@color/white"
-            android:paddingLeft="10dp"
-            android:paddingRight="10dp"
-
-            android:layout_toLeftOf="@id/tv_upLoad"
-            android:text="@string/sync_res_login"/>
     </RelativeLayout>
     <android.support.v4.widget.SwipeRefreshLayout
-        android:id="@+id/srl_refresh"
+        android:id="@+id/srl_file_list"
+        android:layout_below="@+id/top_bar"
         android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:layout_below="@id/top_bar">
+        android:layout_height="match_parent">
         <android.support.v7.widget.RecyclerView
             android:id="@+id/rv_file_list"
             android:layout_width="match_parent"
-            android:layout_height="match_parent"
-            />
+            android:layout_height="match_parent"/>
     </android.support.v4.widget.SwipeRefreshLayout>
 
 </RelativeLayout>

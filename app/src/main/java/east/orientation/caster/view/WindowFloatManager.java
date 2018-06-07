@@ -3,7 +3,6 @@ package east.orientation.caster.view;
 import android.animation.ObjectAnimator;
 import android.animation.PropertyValuesHolder;
 import android.app.AppOpsManager;
-import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
@@ -11,7 +10,6 @@ import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Binder;
 import android.os.Build;
-import android.os.Vibrator;
 import android.provider.Settings;
 import android.support.annotation.RequiresApi;
 import android.util.DisplayMetrics;
@@ -30,22 +28,21 @@ import east.orientation.caster.R;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.local.VideoConfig;
-import east.orientation.caster.ui.activity.MainActivity;
 import east.orientation.caster.ui.activity.ResActivity;
 import east.orientation.caster.ui.activity.SettingActivity;
 import east.orientation.caster.ui.activity.WriteActivity;
-import east.orientation.caster.util.FloatWindowPermissionChecker;
 import east.orientation.caster.util.RomUtils;
 import east.orientation.caster.util.SharePreferenceUtil;
 import east.orientation.caster.util.ToastUtil;
 
-import static android.view.Surface.ROTATION_270;
-import static android.view.Surface.ROTATION_90;
+import static android.view.Surface.ROTATION_0;
+import static android.view.Surface.ROTATION_180;
 import static android.view.WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
 import static android.view.WindowManager.LayoutParams.TYPE_PHONE;
 import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
+import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_STOP;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_TRY_START;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK;
 
@@ -77,12 +74,6 @@ public class WindowFloatManager {
     private WindowManager.LayoutParams mLineParams;
     private PureVerticalSeekBar mSeekBar;
     private WindowManager.LayoutParams mSeekParams;
-    private BroadcastReceiver mReceiver = new BroadcastReceiver() {
-        @Override
-        public void onReceive(Context context, Intent intent) {
-
-        }
-    };
 
     private WindowFloatManager(Context context){
         mContext = context;
@@ -149,8 +140,10 @@ public class WindowFloatManager {
             mLineStartChangeListener.onChange(left,top,right,bottom);
         }
 
-        if (getAppInfo().isStreamRunning())
+        if (getAppInfo().isStreamRunning()){
+            Log.e("@@","setScreen show");
             showOrHideScrollView(true);
+        }
     }
 
     public void setHorizontal(){
@@ -172,6 +165,7 @@ public class WindowFloatManager {
     }
 
     public void initScroll(int large_width,int large_height){
+        isPort = false;
         if (mLine != null){
             sWindowManager.removeView(mLine);
         }
@@ -192,7 +186,6 @@ public class WindowFloatManager {
         }else {
             mStartLine = (int) ((sDisplayMetrics.heightPixels+mNavigationbarHeight) * px - mStatusBarHeight);// 根据实际分辨率计算
         }
-
 
         mLine = new View(mContext);
         mLine.setBackgroundColor(Color.RED);
@@ -241,7 +234,7 @@ public class WindowFloatManager {
         mSeekParams.height = sDisplayMetrics.heightPixels/3;
 
         isInit = true;
-
+        Log.e("@@","init show");
         if (isROTATION_0()){
             setScreen();
         }else {
@@ -278,10 +271,6 @@ public class WindowFloatManager {
     private FloatingActionMenu mFloatingActionMenu;
 
     public void showFloatMenus(){
-        if (!FloatWindowPermissionChecker.checkFloatWindowPermission()){
-            ToastUtil.show(mContext,"需开启权限");
-            FloatWindowPermissionChecker.tryJumpToPermissionPage(mContext);
-        }
 
         // 子菜单图标
         ImageView[] menuIcons = new ImageView[mIconsId.length];
@@ -317,10 +306,10 @@ public class WindowFloatManager {
         menuBuilder.setActionViewLongPressListener(actionView -> {
 //          if(!getAppInfo().isActivityRunning()){//判断是否已打开
             // 打开主页面
-            Vibrator vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
-            vibrator.vibrate(100);
-            mContext.startActivity(new Intent(mContext, MainActivity.class)
-                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+//            Vibrator vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
+//            vibrator.vibrate(100);
+//            mContext.startActivity(new Intent(mContext, MainActivity.class)
+//                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 //          }
 
         });
@@ -392,7 +381,7 @@ public class WindowFloatManager {
     private boolean isROTATION_0(){
         int rotation = sWindowManager.getDefaultDisplay().getRotation();
         Log.e("@@","rotation "+rotation);
-        if (ROTATION_90 == rotation || ROTATION_270 == rotation)
+        if (ROTATION_0 == rotation || ROTATION_180 == rotation)
             return true;
         else
             return false;
@@ -412,21 +401,27 @@ public class WindowFloatManager {
         // 投屏
         subButtons[2].setOnClickListener(v-> {
             if (getAppInfo().isServerConnected()){
-                CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
-                if (stickyEvent == null || MESSAGE_STATUS_TCP_OK.equals(stickyEvent.getMessage())) {
-                    EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
+                if (getAppInfo().isStreamRunning()){
+                    // 如果正在投屏则停止
+                    EventBus.getDefault().post(new CastMessage(MESSAGE_ACTION_STREAMING_STOP));
+                }else {
+                    // 如果未投屏则开启
+                    CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
+                    if (stickyEvent == null || MESSAGE_STATUS_TCP_OK.equals(stickyEvent.getMessage())) {
+                        EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
+                    }
                 }
             }else {
-                ToastUtil.show(mContext,"未连接服务器,请开启服务器！");
+                ToastUtil.showToast("未连接服务器,请开启服务器！");
             }
         });
         // 演示
         subButtons[3].setOnClickListener(v-> {
-            ToastUtil.show(mContext,"开发ing !");
+            ToastUtil.showToast("开发ing !");
         });
         // 广播
         subButtons[4].setOnClickListener(v-> {
-            ToastUtil.show(mContext,"开发ing !");
+            ToastUtil.showToast("开发ing !");
 
         });
         // 设置
@@ -448,7 +443,7 @@ public class WindowFloatManager {
         WindowManager.LayoutParams params = new WindowManager.LayoutParams(
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
-                paramType,
+                TYPE_SYSTEM_ALERT,
                 WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE ,
                 PixelFormat.TRANSLUCENT);
         params.format = PixelFormat.RGBA_8888;

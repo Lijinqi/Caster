@@ -4,6 +4,8 @@
     package="east.orientation.caster"
     >
 
+    <uses-permission android:name="east.orientation.newlanucher.provider.READ"/>
+
     <uses-permission android:name="android.permission.CHANGE_WIFI_MULTICAST_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_CONFIGURATION"/>
     <uses-permission android:name="android.permission.RECORD_AUDIO"/>
@@ -15,9 +17,7 @@
     <uses-permission android:name="android.permission.ACCESS_WIFI_STATE"/>
     <uses-permission android:name="android.permission.CHANGE_WIFI_STATE"/>
     <uses-permission android:name="android.permission.SYSTEM_ALERT_WINDOW" />
-    <uses-permission android:name="android.permission.SYSTEM_OVERLAY_WINDOW"/>
     <uses-permission android:name="android.permission.VIBRATE" />
-    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
     <uses-permission android:name="android.permission.READ_PHONE_STATE" />
     <uses-permission android:name="android.permission.WAKE_LOCK" />
     <uses-permission android:name="android.permission.PACKAGE_USAGE_STATS"
@@ -43,9 +43,21 @@
         </activity>
         <activity android:name=".ui.activity.WriteActivity" android:launchMode="singleTask" android:parentActivityName=".ui.activity.MainActivity"/>
         <activity android:name=".ui.activity.SettingActivity" android:launchMode="singleTask" android:parentActivityName=".ui.activity.MainActivity"/>
-        <activity android:name=".ui.activity.ResActivity" android:launchMode="singleTask" android:parentActivityName=".ui.activity.MainActivity"/>
+        <activity android:name=".ui.activity.ResActivity" android:screenOrientation="portrait" android:launchMode="singleTask" android:parentActivityName=".ui.activity.MainActivity"/>
 
+        <provider
+            android:authorities="east.orientation.caster.fileprovider"
+            android:name="android.support.v4.content.FileProvider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths"/>
+        </provider>
+        <!--投屏 service-->
         <service android:name=".cast.CastScreenService" android:exported="false"/>
-    </application>
+        <!--同步 service-->
+        <service android:name=".sync.SyncService"/>
+</application>
 
 </manifest>

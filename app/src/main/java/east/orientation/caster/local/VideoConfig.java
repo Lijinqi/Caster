@@ -7,7 +7,7 @@ package east.orientation.caster.local;
  */
 
 public class VideoConfig {
-    public static final int REQUEST_CODE_SCREEN_CAPTURE = 1;
+    public static final int REQUEST_CODE_SCREEN_CAPTURE = 0x10;
     public static final int DEFAULT_SCREEN_DPI = 1;
     public static final int DEFAULT_I_FRAME_INTERVAL = 2;//1 seconds between I-frames
 

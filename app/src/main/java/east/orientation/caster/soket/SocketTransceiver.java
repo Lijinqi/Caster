@@ -80,10 +80,8 @@ public abstract class SocketTransceiver implements Runnable {
 	public boolean send(byte[] bytes){
 		if (out != null) {
 			try {
-				//out.write(BytesUtils.intToBytes(bytes.length));
 				Log.e(TAG,"send bytes length "+bytes.length);
 				out.write(bytes);
-
 				out.flush();
 				return true;
 			} catch (Exception e) {
@@ -94,11 +92,18 @@ public abstract class SocketTransceiver implements Runnable {
 		return false;
 	}
 
+	/**
+	 * 发送字符串
+	 *
+	 * @param str
+	 *
+	 * @return 发送成功返回true
+	 */
 	public boolean send(String str){
 		if (out != null) {
 			try {
 				out.write(BytesUtils.intToBytes(str.getBytes("gbk").length));
-				Log.e(TAG,"send str length "+str.length());
+				Log.e(TAG,"send str length "+str);
 				out.write(str.getBytes("gbk"));
 
 				out.flush();
@@ -113,15 +118,18 @@ public abstract class SocketTransceiver implements Runnable {
 
 	/**
 	 * 上传文件
+	 *
 	 * @param str	请求
+	 *
 	 * @param fileSize	文件大小
+	 *
 	 * @return
 	 */
 	public boolean send(String str ,int fileSize){
 		if (out != null) {
 			try {
 				out.write(BytesUtils.intToBytes(str.getBytes("gbk").length+fileSize));
-
+				Log.e(TAG,"send str length "+str);
 				out.write(str.getBytes("gbk"));
 
 				out.flush();
@@ -152,8 +160,6 @@ public abstract class SocketTransceiver implements Runnable {
 				byte[] lenBytes = new byte[4];
 				in.readFully(lenBytes);
 				int len = BytesUtils.bytesToInt(lenBytes,0);
-
-
 				Log.e(TAG,"head len: "+len);
 				if (len>0){
 					if (len>DEFAULT_PACKET_LEN){
@@ -172,7 +178,7 @@ public abstract class SocketTransceiver implements Runnable {
 					}else {
 						byte[] frame = new byte[len];
 						in.readFully(frame);
-						Log.e(TAG,len+"run <= default"+frame.length);
+						//Log.e(TAG,len+"run <= default"+frame.length);
 						this.onReceive(addr, frame);
 					}
 				}

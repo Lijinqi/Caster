@@ -1,117 +1,113 @@
 <?xml version="1.0" encoding="utf-8"?>
-<android.support.constraint.ConstraintLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    xmlns:app="http://schemas.android.com/apk/res-auto"
+<RelativeLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools"
-    android:id="@+id/content"
+    android:id="@+id/rl_content"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
+    android:background="@android:color/transparent"
     tools:context="east.orientation.caster.ui.activity.MainActivity">
 
-    <RelativeLayout
-        android:id="@+id/rl_content"
+    <LinearLayout
+        android:id="@+id/ll_menu"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="wrap_content"
+        android:background="@color/colorPrimary"
+        android:weightSum="10">
 
-        <LinearLayout
-            android:id="@+id/ll_menu"
-            android:layout_width="match_parent"
+        <Button
+            android:id="@+id/btn_draw"
+            style="@style/MainItemStyle"
+            android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:background="@color/colorPrimary"
-            android:weightSum="10">
+            android:layout_weight="1"
+            android:drawableTop="@mipmap/ic_pen"
 
-            <Button
-                android:id="@+id/btn_draw"
-                style="@style/MainItemStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawableTop="@mipmap/ic_pen"
+            android:text="@string/main_pen" />
 
-                android:text="@string/main_pen" />
+        <Button
+            android:id="@+id/btn_res"
+            style="@style/MainItemStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@mipmap/ic_res"
+            android:text="@string/main_res" />
 
-            <Button
-                android:id="@+id/btn_res"
-                style="@style/MainItemStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawableTop="@mipmap/ic_res"
-                android:text="@string/main_res" />
-
-            <Button
-                android:id="@+id/btn_castToLarge"
-                style="@style/MainItemStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawableTop="@mipmap/ic_cast_large"
-                android:text="@string/main_cast" />
+        <Button
+            android:id="@+id/btn_castToLarge"
+            style="@style/MainItemStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@mipmap/ic_cast_large"
+            android:text="@string/main_cast" />
 
 
-            <Button
-                android:id="@+id/btn_castStuScreen"
-                style="@style/MainItemStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawableTop="@mipmap/ic_stu_screen"
-                android:text="@string/main_castStuScreen" />
+        <Button
+            android:id="@+id/btn_castStuScreen"
+            style="@style/MainItemStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@mipmap/ic_stu_screen"
+            android:text="@string/main_castStuScreen" />
 
-            <Button
-                android:id="@+id/btn_castToAll"
-                style="@style/MainItemStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawableTop="@mipmap/ic_cast_all"
-                android:text="@string/main_castToAll" />
+        <Button
+            android:id="@+id/btn_castToAll"
+            style="@style/MainItemStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@mipmap/ic_cast_all"
+            android:text="@string/main_castToAll" />
 
-            <Button
-                android:id="@+id/btn_setting"
-                style="@style/MainItemStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawableTop="@mipmap/ic_setting"
-                android:text="@string/main_setting" />
+        <Button
+            android:id="@+id/btn_setting"
+            style="@style/MainItemStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@mipmap/ic_setting"
+            android:text="@string/main_setting" />
 
-            <TextView
-                android:id="@+id/tv_connect_state"
-                android:layout_width="0dp"
-                android:layout_height="match_parent"
-                android:layout_weight="3"
-                android:gravity="center_vertical"
-                android:text=""
-                android:textColor="#fff" />
-
-            <Button
-                android:id="@+id/btn_exit"
-                style="@style/MainItemStyle"
-                android:layout_width="0dp"
-                android:layout_height="wrap_content"
-                android:layout_weight="1"
-                android:drawableTop="@mipmap/ic_exit"
-                android:text="@string/main_exit" />
-        </LinearLayout>
-
-        <ImageView
-            android:id="@+id/iv_theme"
-            android:layout_width="match_parent"
+        <TextView
+            android:id="@+id/tv_connect_state"
+            android:layout_width="0dp"
             android:layout_height="match_parent"
-            android:layout_below="@+id/ll_menu"
-            android:scaleType="center"
-            android:src="@mipmap/background" />
-        <!--<android.support.v4.widget.SwipeRefreshLayout-->
-        <!--android:id="@+id/refresh_stu_list"-->
+            android:layout_weight="3"
+            android:gravity="center_vertical"
+            android:text=""
+            android:textColor="#fff" />
+
+        <Button
+            android:id="@+id/btn_exit"
+            style="@style/MainItemStyle"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:drawableTop="@mipmap/ic_exit"
+            android:text="@string/main_exit" />
+    </LinearLayout>
+
+    <!--<ImageView-->
+        <!--android:id="@+id/iv_theme"-->
         <!--android:layout_width="match_parent"-->
         <!--android:layout_height="match_parent"-->
         <!--android:layout_below="@+id/ll_menu"-->
-        <!--android:background="@null">-->
-        <!--<android.support.v7.widget.RecyclerView-->
-        <!--android:id="@+id/rv_stu_list"-->
-        <!--android:layout_width="match_parent"-->
-        <!--android:layout_height="match_parent"/>-->
-        <!--</android.support.v4.widget.SwipeRefreshLayout>-->
-    </RelativeLayout>
+        <!--android:scaleType="center"-->
+        <!--android:src="@mipmap/background" />-->
+    <!--<android.support.v4.widget.SwipeRefreshLayout-->
+    <!--android:id="@+id/refresh_stu_list"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent"-->
+    <!--android:layout_below="@+id/ll_menu"-->
+    <!--android:background="@null">-->
+    <!--<android.support.v7.widget.RecyclerView-->
+    <!--android:id="@+id/rv_stu_list"-->
+    <!--android:layout_width="match_parent"-->
+    <!--android:layout_height="match_parent"/>-->
+    <!--</android.support.v4.widget.SwipeRefreshLayout>-->
+</RelativeLayout>
 
-</android.support.constraint.ConstraintLayout>
+

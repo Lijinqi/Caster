@@ -52,7 +52,7 @@ public class SyncSender {
      * @return
      */
     public static String filedown(String fileName){
-        String action = String.format("Orntcmd=filedown,data=A_%s",fileName);
+        String action = String.format("Orntcmd=filedown,data=%s",fileName);
         return action;
     }
 
@@ -64,7 +64,7 @@ public class SyncSender {
      * @return
      */
     public static String filedel(String fileName){
-        String action = String.format("Orntcmd=filedel,data=%s",fileName);
+        String action = String.format("Orntcmd=filedel,data=A_%s",fileName);
         return action;
     }
 
@@ -86,7 +86,7 @@ public class SyncSender {
      * @return
      */
     public static String filedel_syn(String fileName){
-        String action = String.format("Orntcmd=filedel_syn,data=A_Del_%s",fileName);
+        String action = String.format("Orntcmd=filedel_syn,data=P_Del_%s",fileName);
         return action;
     }
 
@@ -98,7 +98,7 @@ public class SyncSender {
      * @return
      */
     public static String fileupdated_syn(String fileName){
-        String action = String.format("Orntcmd=fileupdated_syn,data=A_%s",fileName);
+        String action = String.format("Orntcmd=fileupdated_syn,data=P_%s",fileName);
         return action;
     }
 }

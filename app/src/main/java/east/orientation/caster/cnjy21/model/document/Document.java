@@ -87,6 +87,12 @@ public class Document {
 	 * 上传时间.
 	 */
 	private Long dateline;
+
+	/**
+	 * 格式化文件大小
+	 */
+	private String formatSize;
+
 	/**
 	 * 文件大小.
 	 */
@@ -115,6 +121,16 @@ public class Document {
 	private String parentpath;
 
 	private Integer versionid;
+
+	private int downLoadState;// 下载状态 0--未下载， 1--下载中， 2--已下载
+
+	public int getDownLoadState() {
+		return downLoadState;
+	}
+
+	public void setDownLoadState(int downLoadState) {
+		this.downLoadState = downLoadState;
+	}
 
 	public Long getItemId() {
 		return itemId;
@@ -170,6 +186,14 @@ public class Document {
 
 	public void setFileSize(Long fileSize) {
 		this.fileSize = fileSize;
+	}
+
+	public String getFormatSize() {
+		return formatSize;
+	}
+
+	public void setFormatSize(String formatSize) {
+		this.formatSize = formatSize;
 	}
 
 	public String getFileType() {
@@ -292,26 +316,4 @@ public class Document {
 		this.intro = intro;
 	}
 
-	public String getFileSizeFormat(){
-		return FormatFileSize(fileSize);
-	}
-	/**
-	 * 转换文件大小
-	 *
-	 * @param fileS
-	 */
-	public String FormatFileSize(long fileS) {
-		DecimalFormat df = new DecimalFormat("#.00");
-		String fileSizeString = "";
-		if (fileS < 1024) {
-			fileSizeString = df.format((double) fileS) + "B";
-		} else if (fileS < 1048576) {
-			fileSizeString = df.format((double) fileS / 1024) + "K";
-		} else if (fileS < 1073741824) {
-			fileSizeString = df.format((double) fileS / 1048576) + "M";
-		} else {
-			fileSizeString = df.format((double) fileS / 1073741824) + "G";
-		}
-		return fileSizeString;
-	}
 }

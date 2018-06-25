@@ -8,9 +8,11 @@ import com.xuhao.android.libsocket.utils.BytesUtils;
 import java.io.DataInputStream;
 import java.io.DataOutputStream;
 import java.io.IOException;
+import java.io.UnsupportedEncodingException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.nio.charset.Charset;
+import java.util.concurrent.LinkedBlockingQueue;
 
 /**
  * Socket收发器 通过Socket发送数据，并使用新线程监听Socket接收到的数据
@@ -24,7 +26,7 @@ public abstract class SocketTransceiver implements Runnable {
 	private DataInputStream in;
 	private DataOutputStream out;
 	private boolean runFlag;
-
+	private LinkedBlockingQueue<byte[]> mQueue = new LinkedBlockingQueue<>();
 	/**
 	 * 实例化
 	 *
@@ -63,7 +65,10 @@ public abstract class SocketTransceiver implements Runnable {
 	public void stop() {
 		runFlag = false;
 		try {
+			mQueue.clear();
 			socket.shutdownInput();
+			socket.shutdownOutput();
+			out.close();
 			in.close();
 		} catch (Exception e) {
 			e.printStackTrace();
@@ -78,18 +83,7 @@ public abstract class SocketTransceiver implements Runnable {
 	 * @return 发送成功返回true
 	 */
 	public boolean send(byte[] bytes){
-		if (out != null) {
-			try {
-				Log.e(TAG,"send bytes length "+bytes.length);
-				out.write(bytes);
-				out.flush();
-				return true;
-			} catch (Exception e) {
-				e.printStackTrace();
-				Log.e(TAG,"Send error : "+e);
-			}
-		}
-		return false;
+		return mQueue.offer(bytes);
 	}
 
 	/**
@@ -100,18 +94,16 @@ public abstract class SocketTransceiver implements Runnable {
 	 * @return 发送成功返回true
 	 */
 	public boolean send(String str){
-		if (out != null) {
-			try {
-				out.write(BytesUtils.intToBytes(str.getBytes("gbk").length));
-				Log.e(TAG,"send str length "+str);
-				out.write(str.getBytes("gbk"));
-
-				out.flush();
-				return true;
-			} catch (Exception e) {
-				e.printStackTrace();
-				Log.e(TAG,"Send error : "+e);
-			}
+		try {
+			byte[] a = BytesUtils.intToBytes(str.getBytes("gbk").length);
+			byte[] b = new byte[0];
+			b = str.getBytes("gbk");
+			byte[] c = new byte[a.length+b.length];
+			System.arraycopy(a,0,c,0,a.length);
+			System.arraycopy(b,0,c,a.length,b.length);
+			return mQueue.offer(c);
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
 		}
 		return false;
 	}
@@ -126,21 +118,21 @@ public abstract class SocketTransceiver implements Runnable {
 	 * @return
 	 */
 	public boolean send(String str ,int fileSize){
-		if (out != null) {
-			try {
-				out.write(BytesUtils.intToBytes(str.getBytes("gbk").length+fileSize));
-				Log.e(TAG,"send str length "+str);
-				out.write(str.getBytes("gbk"));
-
-				out.flush();
-				return true;
-			} catch (Exception e) {
-				e.printStackTrace();
-				Log.e(TAG,"Send error : "+e);
-			}
+		try {
+			byte[] a = BytesUtils.intToBytes(str.getBytes("gbk").length+fileSize);
+			byte[] b = str.getBytes("gbk");
+			byte[] c = new byte[a.length+b.length];
+			System.arraycopy(a,0,c,0,a.length);
+			System.arraycopy(b,0,c,a.length,b.length);
+			return mQueue.offer(c);
+		} catch (UnsupportedEncodingException e) {
+			e.printStackTrace();
+			Log.e(TAG,"Send error : "+e);
 		}
 		return false;
 	}
+
+
 
 	/**
 	 * 监听Socket接收的数据(新线程中运行)
@@ -150,6 +142,23 @@ public abstract class SocketTransceiver implements Runnable {
 		try {
 			in = new DataInputStream(this.socket.getInputStream());
 			out = new DataOutputStream(this.socket.getOutputStream());
+			// 发送线程
+			new Thread(()->{
+				while (runFlag){
+					byte[] data = null;
+					try {
+						data = mQueue.take();
+						if (data != null && out != null){
+							//Log.e(TAG,"send "+data.length);
+							out.write(data);
+							out.flush();
+						}
+					} catch (Exception e) {
+						e.printStackTrace();
+						Log.e(TAG,"send error"+e);
+					}
+				}
+			}).start();
 
 		} catch (IOException e) {
 			e.printStackTrace();
@@ -158,9 +167,10 @@ public abstract class SocketTransceiver implements Runnable {
 		while (runFlag) {
 			try {
 				byte[] lenBytes = new byte[4];
+				//Log.e(TAG,"prepare read len");
 				in.readFully(lenBytes);
 				int len = BytesUtils.bytesToInt(lenBytes,0);
-				Log.e(TAG,"head len: "+len);
+				//Log.e(TAG,"head len: "+len);
 				if (len>0){
 					if (len>DEFAULT_PACKET_LEN){
 						double c = len/DEFAULT_PACKET_LEN;
@@ -174,7 +184,6 @@ public abstract class SocketTransceiver implements Runnable {
 						byte[] tailBytes = new byte[tail];
 						in.readFully(tailBytes);
 						this.onReceive(addr,tailBytes);
-
 					}else {
 						byte[] frame = new byte[len];
 						in.readFully(frame);

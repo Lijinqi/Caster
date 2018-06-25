@@ -5,6 +5,7 @@ import android.content.ComponentName;
 import android.content.Intent;
 import android.content.IntentFilter;
 import android.content.pm.PackageManager;
+import android.net.wifi.WifiManager;
 import android.util.Log;
 
 import com.vise.log.ViseLog;
@@ -34,7 +35,6 @@ import okhttp3.Cache;
 public class CastApplication extends Application {
     private static CastApplication sAppInstance;
     public static AppInfo sAppInfo;
-
     private ExitBroadcastReceiver mExitBroadcastReceiver;
 
     public static CastApplication getAppContext(){
@@ -45,6 +45,8 @@ public class CastApplication extends Application {
     public void onCreate() {
         super.onCreate();
         sAppInstance = this;
+        // 初始化AppInfo
+        sAppInfo = new AppInfo(this);
         // 注册广播
         initExitReceiver();
         // 初始化OkSocket
@@ -55,8 +57,6 @@ public class CastApplication extends Application {
         initLog();
         // 初始化http
         initNet();
-        // 初始化AppInfo
-        sAppInfo = new AppInfo(this);
         // 开启投屏服务
         startService(CastScreenService.getStartIntent(this));
         // 开启同步服务
@@ -112,12 +112,13 @@ public class CastApplication extends Application {
 
         // 注销广播
         sAppInstance.unregisterReceiver(mExitBroadcastReceiver);
-
-//        // 注销静态广播
-//        getPackageManager().setComponentEnabledSetting( new ComponentName("east.orientation.caster", ExitBroadcastReceiver.class.getName()),
-//                PackageManager.COMPONENT_ENABLED_STATE_DISABLED,
-//                PackageManager.DONT_KILL_APP);
-
+        // 停止服务
+        if (sAppInfo.getCastScreenService() != null){
+            sAppInfo.getCastScreenService().onDestroy();
+        }
+        if (sAppInfo.getSyncService() != null){
+            sAppInfo.getSyncService().onDestroy();
+        }
         MobclickAgent.exit();
     }
 }

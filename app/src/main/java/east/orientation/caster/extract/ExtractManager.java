@@ -46,11 +46,8 @@ public class ExtractManager extends BaseExtract{
     @Override
     public void onExtract(String srcPath, String extractPath, String password, IExtractListener listener) {
         mCurrentArchiver=getCorrectExtract(getFileType(srcPath));
-        mThreadPool.execute(new Runnable() {
-            @Override
-            public void run() {
-                mCurrentArchiver.onExtract(srcPath,extractPath,password,listener);
-            }
+        mThreadPool.execute(()->{
+            mCurrentArchiver.onExtract(srcPath,extractPath,password,listener);
         });
     }
 

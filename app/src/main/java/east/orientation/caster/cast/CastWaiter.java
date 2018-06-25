@@ -3,13 +3,22 @@ package east.orientation.caster.cast;
 import android.util.Log;
 
 import com.xuhao.android.libsocket.utils.BytesUtils;
+
+import java.io.IOException;
 import java.net.DatagramPacket;
+import java.net.Inet4Address;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.MulticastSocket;
+import java.net.NetworkInterface;
+import java.net.UnknownHostException;
+import java.util.Enumeration;
 import java.util.Timer;
 import java.util.TimerTask;
 
 import east.orientation.caster.local.Common;
+
+import static east.orientation.caster.CastApplication.getAppInfo;
 
 
 /**
@@ -33,12 +42,13 @@ public class CastWaiter {
     }
     //============================================
 
-    private boolean isSearching = true;
+    private boolean isSearching = false;
 
     private static Object mLock = new Object();
 
     private OnSearchListener mSearchListener;
-
+    private InetSocketAddress mSocketAddress;
+    private NetworkInterface mNetworkInterface;
     private MulticastSocket mMulticastSocket;
 
     private SearchThread mSearchThread;
@@ -55,24 +65,38 @@ public class CastWaiter {
         @Override
         public void run() {
             try {
-                InetAddress address = InetAddress.getByName(DEFAULT_CAST_IP);
+                mSocketAddress = new InetSocketAddress(DEFAULT_CAST_IP,DEFAULT_CAST_PORT);
                 mMulticastSocket = new MulticastSocket(DEFAULT_CAST_PORT);
 
-                mMulticastSocket.joinGroup(address);
-
+                Enumeration<NetworkInterface> networkInterfaces = NetworkInterface.getNetworkInterfaces();
+                while (networkInterfaces.hasMoreElements()) {
+                    NetworkInterface iface = networkInterfaces.nextElement();
+                    try {
+                        Log.e("@@","interface - "+iface.getDisplayName());
+                    } catch (Exception e) {
+                    }
+                }
+                mNetworkInterface = NetworkInterface.getByName("wlan0");
+                mMulticastSocket.setNetworkInterface(mNetworkInterface);
+                mMulticastSocket.joinGroup(mSocketAddress,mNetworkInterface);
+                mMulticastSocket.setSoTimeout(3000);
                 byte[] revBytes = new byte[24];
-                DatagramPacket packet = new DatagramPacket(revBytes,revBytes.length,address,DEFAULT_CAST_PORT);
-                Log.e("@@","-receive -"+packet.getAddress());
+                DatagramPacket packet = new DatagramPacket(revBytes,revBytes.length,mSocketAddress);
+
+                isSearching = true;
+
                 mMulticastSocket.receive(packet);
                 parserData(packet);
 
             } catch (Exception e) {
                 e.printStackTrace();
+                isSearching = false;
                 Log.e("@@","-receive err-"+e);
+                CastWaiter.this.stop();
                 new Timer().schedule(new TimerTask() {
                     @Override
                     public void run() {
-                        CastWaiter.this.stop();
+
                         CastWaiter.this.start();
                     }
                 },1000);
@@ -113,9 +137,14 @@ public class CastWaiter {
     public void stop(){
         synchronized (mLock){
             mSearchThread.interrupt();
-            //mSearchThread = null;
             isSearching = false;
-            //lock.release();
+            try {
+                mMulticastSocket.leaveGroup(mSocketAddress,mNetworkInterface);
+                mMulticastSocket.close();
+                mMulticastSocket = null;
+            } catch (Exception e) {
+                e.printStackTrace();
+            }
             Log.e("@@","waiter stop");
         }
     }

@@ -33,6 +33,7 @@ import east.orientation.caster.CastApplication;
 import east.orientation.caster.R;
 
 import east.orientation.caster.cast.request.SelectRectRequest;
+import east.orientation.caster.cast.request.StopCastRequest;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.ui.activity.MainActivity;
@@ -44,6 +45,7 @@ import static android.content.Intent.ACTION_SCREEN_OFF;
 import static android.net.wifi.WifiManager.NETWORK_STATE_CHANGED_ACTION;
 import static android.net.wifi.WifiManager.WIFI_STATE_CHANGED_ACTION;
 import static com.xuhao.android.libsocket.sdk.OkSocket.open;
+import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_START;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_STOP;
@@ -97,6 +99,8 @@ public class CastScreenService extends Service {
         super.onCreate();
         Log.e(TAG, "录屏服务启动");
         sServiceInstance = this;
+        // 添加全局引用
+        getAppInfo().setCastScreenService(this);
         mAppContext = getApplicationContext();
         mHandler = new Handler(Looper.getMainLooper());
         mNotificationManager = (NotificationManager) getSystemService(Context.NOTIFICATION_SERVICE);
@@ -157,9 +161,7 @@ public class CastScreenService extends Service {
                         break;
                     case Common.ACTION_EXIT:
                         Log.d(TAG, "exit app");
-                        stopService();
-
-
+                        getAppContext().AppExit();
                         break;
                 }
             }
@@ -206,7 +208,9 @@ public class CastScreenService extends Service {
                             case WifiManager.WIFI_STATE_DISABLING:
                                 Log.e(TAG,"关闭中");
                                 //关闭中
-                                getAppInfo().getConnectionManager().disconnect();
+                                if (getAppInfo().getConnectionManager() != null ){
+                                    getAppInfo().getConnectionManager().disconnect();
+                                }
                                 break;
                             case WifiManager.WIFI_STATE_UNKNOWN:
                                 //未知
@@ -294,6 +298,9 @@ public class CastScreenService extends Service {
     private void serviceStopStreaming() {
         if (!getAppInfo().isStreamRunning()) return;
         //stopForeground(true);
+        // 发送关闭大屏请求
+        Log.e(TAG,"发送关闭大屏请求");
+        getAppInfo().getConnectionManager().send(new StopCastRequest());
         //
         WindowFloatManager.getInstance().showOrHideScrollView(false);
         mCastServiceHandler.obtainMessage(CastServiceHandler.HANDLER_STOP_STREAMING).sendToTarget();
@@ -441,7 +448,7 @@ public class CastScreenService extends Service {
 
         EventBus.getDefault().unregister(this);
         // 退出应用
-        CastApplication.getAppContext().AppExit();
+        //CastApplication.getAppContext().AppExit();
         super.onDestroy();
     }
 }

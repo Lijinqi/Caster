@@ -70,7 +70,7 @@ public class WindowFloatManager {
     private boolean isInit;// 是否初始化
     private int mStartLine;// 起始位置
     private LineStartChangeListener mLineStartChangeListener;
-    private View mLine;
+    //private View mLine;
     private WindowManager.LayoutParams mLineParams;
     private PureVerticalSeekBar mSeekBar;
     private WindowManager.LayoutParams mSeekParams;
@@ -166,12 +166,14 @@ public class WindowFloatManager {
 
     public void initScroll(int large_width,int large_height){
         isPort = false;
-        if (mLine != null){
-            sWindowManager.removeView(mLine);
-        }
-        if (mSeekBar != null){
-            sWindowManager.removeView(mSeekBar);
-        }
+//        if (mLine != null){
+//            if (mLine.isAttachedToWindow())
+//                sWindowManager.removeView(mLine);
+//        }
+//        if (mSeekBar != null){
+//            if (mSeekBar.isAttachedToWindow())
+//                sWindowManager.removeView(mSeekBar);
+//        }
         px = (double)large_height / (double)large_width;
         int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
         mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
@@ -187,15 +189,17 @@ public class WindowFloatManager {
             mStartLine = (int) ((sDisplayMetrics.heightPixels+mNavigationbarHeight) * px - mStatusBarHeight);// 根据实际分辨率计算
         }
 
-        mLine = new View(mContext);
-        mLine.setBackgroundColor(Color.RED);
+//        mLine = new View(mContext);
+//        mLine.setBackgroundColor(Color.RED);
         mLineParams = getDefaultSystemWindowParams();
         mLineParams.gravity = Gravity.LEFT | Gravity.TOP;
         mLineParams.width = sDisplayMetrics.widthPixels;
         mLineParams.height = 2;
         mLineParams.y = mStartLine;
 
-        mSeekBar = new PureVerticalSeekBar(mContext);
+        if (mSeekBar == null){
+            mSeekBar = new PureVerticalSeekBar(mContext);
+        }
         //mSeekBar.setColor(mContext.getResources().getColor(R.color.aliceblue),mContext.getResources().getColor(R.color.blue));
         mSeekBar.setImage_background(R.mipmap.app_launcher);
         mSeekBar.setDragable(true);
@@ -215,11 +219,11 @@ public class WindowFloatManager {
                 }
 
                 mLineParams.y = mLineParams.y+mNavigationbarHeight;
-                if (mLineParams.y>sDisplayMetrics.heightPixels)
-                    mLine.setVisibility(View.GONE);
-                else
-                    mLine.setVisibility(View.VISIBLE);
-                sWindowManager.updateViewLayout(mLine,mLineParams);
+//                if (mLineParams.y>sDisplayMetrics.heightPixels)
+//                    mLine.setVisibility(View.GONE);
+//                else
+//                    mLine.setVisibility(View.VISIBLE);
+//                sWindowManager.updateViewLayout(mLine,mLineParams);
             }
 
             @Override
@@ -231,7 +235,7 @@ public class WindowFloatManager {
         mSeekParams = getDefaultSystemWindowParams();
         mSeekParams.x = 10;// 距离特定边距离 根据Gravity
         mSeekParams.width = 50;
-        mSeekParams.height = sDisplayMetrics.heightPixels/3;
+        mSeekParams.height = sDisplayMetrics.heightPixels/5;
 
         isInit = true;
         Log.e("@@","init show");
@@ -244,14 +248,10 @@ public class WindowFloatManager {
 
     private void getStatusAndNavigationHeight(){
         Resources resources = mContext.getResources();
-
         int resIdStatusbarHeight = resources.getIdentifier("status_bar_height", "dimen", "android");
-
         if(resIdStatusbarHeight > 0){
             mStatusBarHeight = resources.getDimensionPixelSize(resIdStatusbarHeight);//状态栏高度
         }
-
-
         int resIdShow = resources.getIdentifier("config_showNavigationBar", "bool", "android");
         boolean hasNavigationBar = false;
         if(resIdShow > 0){
@@ -264,6 +264,55 @@ public class WindowFloatManager {
             }
 
         }
+    }
+
+    private boolean isPort;
+    public void showOrHideScrollView(boolean isShow){
+        if (isShow ){
+            if (isROTATION_0()){
+                Log.e("@@","竖");
+
+                if (!isPort /*&& mLine!= null*/ && mSeekBar != null){
+//                    if (mLine.isAttachedToWindow()){
+//                        sWindowManager.removeView(mLine);
+//                    }
+                    if (mSeekBar.isAttachedToWindow()){
+                        sWindowManager.removeView(mSeekBar);
+                    }
+                    //sWindowManager.addView(mLine,mLineParams);
+                    sWindowManager.addView(mSeekBar,mSeekParams);
+                }
+                isPort = true;
+            }else {
+                isPort = false;
+                Log.e("@@","横");
+            }
+        }else {
+            if (/*mLine!= null &&*/ mSeekBar != null){
+                Log.e("@@","no show");
+//                if (mLine.isAttachedToWindow()){
+//
+//                    sWindowManager.removeView(mLine);
+//                }
+                if (mSeekBar.isAttachedToWindow()){
+
+                    sWindowManager.removeView(mSeekBar);
+                }
+                isPort = false;
+            }
+        }
+    }
+
+    /**
+     * 是否竖屏
+     */
+    public boolean isROTATION_0(){
+        int rotation = sWindowManager.getDefaultDisplay().getRotation();
+        Log.e("@@","rotation "+rotation);
+        if (ROTATION_0 == rotation || ROTATION_180 == rotation)
+            return true;
+        else
+            return false;
     }
 
     /** 系统悬浮 */
@@ -336,55 +385,6 @@ public class WindowFloatManager {
 
             }
         });
-    }
-
-    private boolean isPort;
-    public void showOrHideScrollView(boolean isShow){
-        if (isShow ){
-            if (isROTATION_0()){
-                Log.e("@@","竖");
-
-                if (!isPort && mLine!= null && mSeekBar != null){
-                    if (mLine.isAttachedToWindow()){
-                        sWindowManager.removeView(mLine);
-                    }
-                    if (mSeekBar.isAttachedToWindow()){
-                        sWindowManager.removeView(mSeekBar);
-                    }
-                    sWindowManager.addView(mLine,mLineParams);
-                    sWindowManager.addView(mSeekBar,mSeekParams);
-                }
-                isPort = true;
-            }else {
-                isPort = false;
-                Log.e("@@","横");
-            }
-        }else {
-            if (mLine!= null && mSeekBar != null){
-                Log.e("@@","no show");
-                if (mLine.isAttachedToWindow()){
-
-                    sWindowManager.removeView(mLine);
-                }
-                if (mSeekBar.isAttachedToWindow()){
-
-                    sWindowManager.removeView(mSeekBar);
-                }
-                isPort = false;
-            }
-        }
-    }
-
-    /**
-     * 是否竖屏
-     */
-    private boolean isROTATION_0(){
-        int rotation = sWindowManager.getDefaultDisplay().getRotation();
-        Log.e("@@","rotation "+rotation);
-        if (ROTATION_0 == rotation || ROTATION_180 == rotation)
-            return true;
-        else
-            return false;
     }
 
     private void setItemClickListener(SubActionButton[] subButtons) {

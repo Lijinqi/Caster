@@ -2,6 +2,8 @@ package east.orientation.caster.ui.fragment;
 
 import android.os.Bundle;
 import android.support.v4.app.Fragment;
+import android.support.v4.app.FragmentPagerAdapter;
+import android.support.v4.view.PagerAdapter;
 import android.support.v4.view.ViewPager;
 import android.support.v7.widget.LinearLayoutManager;
 import android.support.v7.widget.RecyclerView;
@@ -32,6 +34,11 @@ import east.orientation.caster.evevtbus.GetDocumentsMessage;
 import east.orientation.caster.ui.adapter.ViewPagerAdapter;
 import east.orientation.caster.util.ToastUtil;
 import east.orientation.caster.view.RecyclerTabLayout;
+import io.reactivex.Observable;
+import io.reactivex.ObservableEmitter;
+import io.reactivex.ObservableOnSubscribe;
+import io.reactivex.functions.Consumer;
+import io.reactivex.schedulers.Schedulers;
 
 /**
  * Created by ljq on 2018/4/24.
@@ -51,7 +58,7 @@ public class ResInternetFragment extends BaseFragment {
     /** 右侧内容相关 */
     private RecyclerTabLayout mSubjectTabLayout;// 科目
     private ViewPager mViewPager;
-    private ViewPagerAdapter mPagerAdapter;// viewpager adapter
+    private PagerAdapter mPagerAdapter;// viewpager adapter
     private List<Subject> mSubjects = new ArrayList<>(); // 科目列表
     private List<String> mTitles = new ArrayList<>();// viewpage title
     private List<ResPageFragment> mPageFragments = new ArrayList<>();// fragments
@@ -169,8 +176,31 @@ public class ResInternetFragment extends BaseFragment {
     }
 
     private void initRightContent() {
-        mPagerAdapter = new ViewPagerAdapter(getChildFragmentManager());
-        mPagerAdapter.setFragments(mPageFragments);
+        mPagerAdapter = new FragmentPagerAdapter(getChildFragmentManager()){
+            @Override
+            public Fragment getItem(int position) {
+                return mPageFragments.get(position);
+            }
+
+            @Override
+            public int getCount() {
+                return mSubjects == null? 0 : mSubjects.size();
+            }
+
+            @Override
+            public CharSequence getPageTitle(int position) {
+                return mSubjects.get(position).getSubjectName();
+            }
+
+            @Override
+            public int getItemPosition(Object object) {
+                return PagerAdapter.POSITION_NONE;
+            }
+
+            @Override
+            public void destroyItem(ViewGroup container, int position, Object object) {
+            }
+        };
         mViewPager.setAdapter(mPagerAdapter);
         mViewPager.addOnPageChangeListener(new ViewPager.OnPageChangeListener() {
             @Override
@@ -184,6 +214,7 @@ public class ResInternetFragment extends BaseFragment {
                 Log.e("@@","---onPageSelected");
                 // 获取不同版本
                 initTabsData();
+
             }
 
             @Override
@@ -193,10 +224,10 @@ public class ResInternetFragment extends BaseFragment {
         });
         // 使 TabLayout 和 ViewPager 相关联
         mSubjectTabLayout.setUpWithViewPager(mViewPager);
-        // 学科
-        initTab();
         // 筛选（版本 知识点）
         initRecycle();
+        // 学科
+        initTab();
     }
 
     private void initTab(){
@@ -209,9 +240,7 @@ public class ResInternetFragment extends BaseFragment {
                 mSubjects.addAll(subjects);
                 // 添加fragment
                 mPageFragments.clear();
-                mTitles.clear();
                 for (int i = 0; i < subjects.size(); i++) {
-                    mTitles.add(subjects.get(i).getSubjectName());
                     ResPageFragment fragment = ResPageFragment.newInstance();
                     Bundle bundle = new Bundle();
                     bundle.putInt("stage",mStage);
@@ -219,15 +248,11 @@ public class ResInternetFragment extends BaseFragment {
                     fragment.setArguments(bundle);
                     mPageFragments.add(fragment);
                 }
-                mPagerAdapter.setTitles(mTitles);
                 mPagerAdapter.notifyDataSetChanged();
 
                 mSubjectTabLayout.setCurrentItem(0,true);
                 mViewPager.setCurrentItem(0);
                 mSubject = mSubjects.get(0);
-
-                // 更新资源列表
-                //updateBroadcast();
 
                 // 获取教材版本信息
                 initTabsData();
@@ -252,9 +277,11 @@ public class ResInternetFragment extends BaseFragment {
             protected void convert(ViewHolder holder, Version version, int position) {
                 holder.setText(R.id.tv_item_title,version.getVersionName());
                 if (version.isSelected()){
-                    holder.getConvertView().setBackgroundResource(R.drawable.sp_tab_item_selected);
+                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.darkgray));
+                    holder.setTextColor(R.id.tv_item_title,getResources().getColor(R.color.white));
                 }else {
-                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.white));
+                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.colorPageItem));
+                    holder.setTextColor(R.id.tv_item_title,getResources().getColor(R.color.colorPrimary));
                 }
                 holder.getConvertView().setOnClickListener(view ->{
                     if (version != mVersion) {
@@ -282,9 +309,11 @@ public class ResInternetFragment extends BaseFragment {
             protected void convert(ViewHolder holder, Book book, int position) {
                 holder.setText(R.id.tv_item_title,book.getBookName());
                 if (book.isSelected()){
-                    holder.getConvertView().setBackgroundResource(R.drawable.sp_tab_item_selected);
+                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.darkgray));
+                    holder.setTextColor(R.id.tv_item_title,getResources().getColor(R.color.white));
                 }else {
-                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.white));
+                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.colorPageItem));
+                    holder.setTextColor(R.id.tv_item_title,getResources().getColor(R.color.colorPrimary));
                 }
                 holder.getConvertView().setOnClickListener(view ->{
                     if (book != mBook) {
@@ -312,9 +341,11 @@ public class ResInternetFragment extends BaseFragment {
                 holder.setText(R.id.tv_item_title,chapter.getName());
 
                 if (chapter.isSelected()){
-                    holder.getConvertView().setBackgroundResource(R.drawable.sp_tab_item_selected);
+                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.darkgray));
+                    holder.setTextColor(R.id.tv_item_title,getResources().getColor(R.color.white));
                 }else {
-                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.white));
+                    holder.getConvertView().setBackgroundColor(getResources().getColor(R.color.colorPageItem));
+                    holder.setTextColor(R.id.tv_item_title,getResources().getColor(R.color.colorPrimary));
                 }
                 holder.getConvertView().setOnClickListener(view ->{
                     if (chapter != mChapter) {

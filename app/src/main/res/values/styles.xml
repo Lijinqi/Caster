@@ -16,6 +16,7 @@
     <!--主界面主题-->
     <style name="MainTheme" parent="AppTheme">
         <item name="android:windowIsTranslucent">true</item>
+        <item name="android:windowBackground">@android:color/transparent</item>
     </style>
 
     <!--主界面item style-->
@@ -58,7 +59,7 @@
     </style>
 
     <style name="RecyclerTabLayoutTheme">
-        <item name="android:textColorSecondary">@color/royalblue</item>
+        <item name="android:textColorSecondary">@color/colorPrimary</item>
     </style>
 
     <style name="RecyclerTabLayoutTheme.Basic"></style>

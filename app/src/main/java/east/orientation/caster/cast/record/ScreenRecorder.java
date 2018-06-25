@@ -70,12 +70,10 @@ public class ScreenRecorder  {
         mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, VideoConfig.FPS_OPTIONS[mIndexFps]);
 
         mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, VideoConfig.DEFAULT_I_FRAME_INTERVAL);
-        // -----------------当画面静止时,重复最后一帧--------------------------------------------------------
+        // 当画面静止时,重复最后一帧
         // https://stackoverflow.com/questions/36578660/android-mediaformatkey-repeat-previous-frame-after-setting
-        mediaFormat.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER,  (VideoConfig.DEFAULT_I_FRAME_INTERVAL*2000000)/VideoConfig.FPS_OPTIONS[mIndexFps]);
-        // ------------------------------------------------------------------------------------------------
+        mediaFormat.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER,  (VideoConfig.DEFAULT_I_FRAME_INTERVAL*2000 *1000)/VideoConfig.FPS_OPTIONS[mIndexFps]);
         mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
-        mediaFormat.setInteger(MediaFormat.KEY_COMPLEXITY, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
         try {
             mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
             mVideoCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
@@ -101,7 +99,7 @@ public class ScreenRecorder  {
                         byte[] frame = new byte[info.size];
                         System.arraycopy(b,sps.length+pps.length,frame,0,info.size);
 
-//                        Log.e(TAG,"录屏 .."+b.length+" == is key "+isIFrame(frame));
+                        //Log.e(TAG,"录屏 .."+b.length+" == is key ");
                         // 添加数据到队列
                         getAppInfo().getScreenVideoStream().add(b);
                         //Log.i("@@","video add:"+getAppInfo().getScreenVideoStream().size()+ " "+new SimpleDateFormat("yyyy-MM-dd-HH-mm-ss-SSS") .format(new Date() ));
@@ -150,22 +148,6 @@ public class ScreenRecorder  {
     private void getSpsPpsByteBuffer(MediaFormat newFormat) {
         sps = newFormat.getByteBuffer("csd-0").array();
         pps = newFormat.getByteBuffer("csd-1").array();
-    }
-
-    public static boolean isIFrame(byte[] data) {
-        if( data == null || data.length < 5) {
-            return false;
-        }
-        if (data[0] == 0x0
-                && data[1] == 0x0
-                && data[2] == 0x0
-                && data[3] == 0x1
-                && data[4] == 0x67) {
-            Log.d("IFrame", "check I frame data: " + Arrays.toString(Arrays.copyOf(data, 5)));
-            return true;
-        }
-        byte nalu = data[4];
-        return ((nalu & 0x1F) == 5);
     }
 
     /**

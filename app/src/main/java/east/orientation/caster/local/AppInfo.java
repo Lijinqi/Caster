@@ -7,6 +7,9 @@ import com.xuhao.android.libsocket.sdk.connection.IConnectionManager;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 
+import east.orientation.caster.cast.CastScreenService;
+import east.orientation.caster.sync.SyncService;
+
 import static east.orientation.caster.CastApplication.getAppInfo;
 
 
@@ -15,8 +18,11 @@ import static east.orientation.caster.CastApplication.getAppInfo;
  */
 
 public class AppInfo {
-    private WifiManager mWifiManager;
+    private CastScreenService mCastScreenService;
+    private SyncService mSyncService;
 
+    private WifiManager mWifiManager;
+    private WifiManager.MulticastLock mMulticastLock;
     private volatile boolean isActivityRunning;// 是否在activity
     private volatile boolean isStreamRunning;// 是否在录屏
     private volatile boolean isServerConnected;// 是否连接服务器
@@ -27,10 +33,32 @@ public class AppInfo {
 
     public AppInfo(final Context context) {
         mWifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
+        mMulticastLock = mWifiManager.createMulticastLock("east.orientation.caster");
+        mMulticastLock.acquire();
+    }
+
+    public CastScreenService getCastScreenService() {
+        return mCastScreenService;
+    }
+
+    public void setCastScreenService(CastScreenService castScreenService) {
+        mCastScreenService = castScreenService;
+    }
+
+    public SyncService getSyncService() {
+        return mSyncService;
+    }
+
+    public void setSyncService(SyncService syncService) {
+        mSyncService = syncService;
     }
 
     public WifiManager getWifiManager() {
         return mWifiManager;
+    }
+
+    public WifiManager.MulticastLock getMulticastLock() {
+        return mMulticastLock;
     }
 
     public IConnectionManager getConnectionManager() {

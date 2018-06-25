@@ -3,12 +3,37 @@ package east.orientation.caster.util;
 import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
+import android.util.Log;
+
+import java.util.Arrays;
 
 /**
  * Created by ljq on 2018/5/2.
  */
 
 public class CommonUtil {
+
+    /**
+     * 是否关键帧 h264
+     * @param data
+     * @return
+     */
+    public static boolean isIFrame(byte[] data) {
+        if( data == null || data.length < 5) {
+            return false;
+        }
+        if (data[0] == 0x0
+                && data[1] == 0x0
+                && data[2] == 0x0
+                && data[3] == 0x1
+                && data[4] == 0x67) {
+            Log.d("IFrame", "check I frame data: " + Arrays.toString(Arrays.copyOf(data, 5)));
+            return true;
+        }
+        byte nalu = data[4];
+        return ((nalu & 0x1F) == 5);
+    }
+
     /**
      * check if network avalable
      *

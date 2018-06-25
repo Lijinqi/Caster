@@ -1,17 +1,25 @@
 package east.orientation.caster.sync;
 
 import android.app.Service;
+import android.content.BroadcastReceiver;
 import android.content.ContentResolver;
+import android.content.Context;
 import android.content.Intent;
+import android.content.IntentFilter;
 import android.database.Cursor;
+import android.net.ConnectivityManager;
+import android.net.NetworkInfo;
 import android.net.Uri;
+import android.net.wifi.WifiManager;
 import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Message;
+import android.os.Parcelable;
 import android.os.Process;
+import android.text.TextUtils;
 import android.util.Log;
 
 import org.greenrobot.eventbus.EventBus;
@@ -23,20 +31,23 @@ import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
 import java.util.concurrent.LinkedBlockingQueue;
 
 import east.orientation.caster.evevtbus.SyncMessage;
-import east.orientation.caster.local.Bean.SyncFileBean;
+import east.orientation.caster.evevtbus.UpdateFilesMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.soket.Client;
 import east.orientation.caster.soket.SocketTransceiver;
+import east.orientation.caster.util.FileUtil;
 import east.orientation.caster.util.SharePreferenceUtil;
-import east.orientation.caster.util.ToastUtil;
 import io.reactivex.Observable;
 import io.reactivex.schedulers.Schedulers;
+
+import static east.orientation.caster.CastApplication.getAppInfo;
 
 /**
  * Created by ljq on 2018/6/5.
@@ -44,18 +55,29 @@ import io.reactivex.schedulers.Schedulers;
 
 public class SyncService extends Service {
     private static final String TAG = "SyncService";
+    private static final int DEFAULT_RECONNECT_DELAY = 5*1000;
     private boolean isLogining;
     private String mAccount;
     private String mPassword;
 
+    private BroadcastReceiver mNetChangeReceiver;
     private Timer mTimer;
     private TimerTask mTimerTask;
     private Handler mHandler;
     private HandlerThread mHandlerThread;
     private Client mClient;
     private SocketTransceiver mSocketTransceiver;
+    // 用于存储需要下载文件列表
+    private LinkedBlockingQueue<String> mDownloadingQueue = new LinkedBlockingQueue<>();
+    // 用于存储正在下载文件字节
     private LinkedBlockingQueue<byte[]> mCurrentDownloadQueue = new LinkedBlockingQueue<>();
-    private List<SyncFileBean> mFiles = new ArrayList<>();
+    // 是否上传中 上传文件时不能传输其他请求
+    private boolean isUploading;
+    // 需要上传队列
+    private LinkedBlockingQueue<String> mUploadFileQueue = new LinkedBlockingQueue<>();
+    // 上传中队列
+    private LinkedBlockingQueue<String> mUploadingQueue = new LinkedBlockingQueue<>();
+
     @Override
     public IBinder onBind(Intent intent) {
         return null;
@@ -64,16 +86,12 @@ public class SyncService extends Service {
     @Override
     public void onCreate() {
         super.onCreate();
-        //
+        // 添加全局引用
+        getAppInfo().setSyncService(this);
+        // 注册eventbus
         EventBus.getDefault().register(this);
-        // 获取账号密码
-        getProviderLogin();
-        // 连接服务
-        connectToService();
-        // Starting thread Handler 开启handler线程
-        mHandlerThread = new HandlerThread(
-                SyncService.class.getSimpleName(),
-                Process.THREAD_PRIORITY_MORE_FAVORABLE);
+        // 开启handler线程
+        mHandlerThread = new HandlerThread(SyncService.class.getSimpleName(), Process.THREAD_PRIORITY_MORE_FAVORABLE);
         mHandlerThread.start();
         mHandler = new Handler(mHandlerThread.getLooper()){
             @Override
@@ -84,15 +102,19 @@ public class SyncService extends Service {
                         if (Common.CMD_RESPONSE_SUCCESS == msg.arg1){
                             // 标记已登录
                             isLogining = true;
-                            SharePreferenceUtil.put(SyncService.this,Common.KEY_ACCOUNT, mAccount,Common.KEY_PASSWD, mPassword);
-
+                            SharePreferenceUtil.put(getApplicationContext(),Common.KEY_ACCOUNT, mAccount,Common.KEY_PASSWD, mPassword);
+                            // 把未上传成功的文件加入需要上传的队列
+                            mUploadFileQueue.addAll(mUploadingQueue);
+                            // 清空正在上传队列
+                            mUploadingQueue.clear();
                         }else {
 
                         }
                         break;
                     case Common.CMD_FILE_UP_ID://上传
                         if (Common.CMD_RESPONSE_SUCCESS == msg.arg1){
-
+                            // 上传成功则去除已上传的
+                            mUploadingQueue.poll();
                         }else {
 
                         }
@@ -110,6 +132,7 @@ public class SyncService extends Service {
                         break;
                     case Common.CMD_FILE_DOWN_ID://文件下载
                         if (Common.CMD_RESPONSE_SUCCESS == msg.arg1 && Common.CMD_FILE_DOWN_HEAD == msg.arg2){
+                            // 下载请求第一次返回
                             Bundle bundle = (Bundle) msg.obj;
                             String fileName = bundle.getString("fileName");
                             int fileSize = bundle.getInt("fileSize");
@@ -118,19 +141,128 @@ public class SyncService extends Service {
                             mCurrentDownloadQueue.add(content);
                             new DownloadThread(fileName,fileSize).start();
                         }else if (Common.CMD_RESPONSE_SUCCESS == msg.arg1 && Common.CMD_FILE_DOWN_CONTENT == msg.arg2){
-                            // 下载返回 第n次 n>1
+                            // 下载请求返回 第n次 n>1
                             byte[] bytes = (byte[]) msg.obj;
                             mCurrentDownloadQueue.add(bytes);
-                        }else if (Common.CMD_FILE_DOWN_FINISH == msg.arg2){
-
-                            String filePath = (String) msg.obj;
-
+                        }else if (Common.CMD_RESPONSE_SUCCESS == msg.arg1 &&Common.CMD_FILE_DOWN_FINISH == msg.arg2){
+                            // 下载完成
+                            File file = (File) msg.obj;
+                            fileUpdated_syn(file.getName());
+                            // 执行下载操作 完成后 更新页面
+                            EventBus.getDefault().post(new UpdateFilesMessage());
+                        }else if(Common.CMD_RESPONSE_SUCCESS == msg.arg1 &&Common.CMD_FILE_DOWN_ERROR == msg.arg2){
+                            // 传输断开 下载失败 则删除未传输完成文件
+                            File file = (File) msg.obj;
+                            if (FileUtil.delete(file.getAbsolutePath())){
+                                Log.e(TAG,"删除未完成文件 成功");
+                            }
                         }
 
+                        break;
+                    case Common.CMD_FILE_DEL_ID:
+                        if (Common.CMD_RESPONSE_SUCCESS == msg.arg1){
+
+                            Log.e(TAG,"删除成功");
+                        }else {
+
+
+                            Log.e(TAG,"删除失败");
+                        }
+                        break;
+
+                    case Common.RECONNECT_ID:
+                        if (mClient != null && !mClient.isConnected()){
+                            mClient.connect(Common.SYNC_SERVER_IP,Common.SYNC_SERVER_PORT);
+                        }
                         break;
                 }
             }
         };
+        // 获取账号密码
+        getProviderLogin();
+        // 连接服务
+        connectToService();
+        // 网络变化监听
+        initReceiver();
+        // 获取退出应用前未上传完成文件队列
+        getSaveUploadQueue();
+        // 开启上传线程
+        new UploadThread().start();
+    }
+
+    private void getSaveUploadQueue() {
+        LinkedBlockingQueue<String> queue = new LinkedBlockingQueue<>();
+        if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_UPLOAD_QUQUE,queue) != null){
+            //
+            mUploadingQueue.addAll((Collection<? extends String>) SharePreferenceUtil.get(getApplicationContext(),Common.KEY_UPLOAD_QUQUE,queue));
+            Log.e(TAG,mUploadingQueue.size()+"--"+mUploadingQueue);
+        }
+    }
+
+    private void initReceiver() {
+        IntentFilter intentFilter = new IntentFilter();
+        intentFilter.addAction(WifiManager.WIFI_STATE_CHANGED_ACTION);
+        intentFilter.addAction(WifiManager.NETWORK_STATE_CHANGED_ACTION);
+        intentFilter.addAction(ConnectivityManager.CONNECTIVITY_ACTION);
+        mNetChangeReceiver = new BroadcastReceiver() {
+            @Override
+            public void onReceive(Context context, Intent intent) {
+                if (WifiManager.WIFI_STATE_CHANGED_ACTION.equals(intent.getAction())) {// 监听wifi的打开与关闭，与wifi的连接无关
+                    int wifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, 0);
+                    Log.e("TAG", "wifiState:" + wifiState);
+                    switch (wifiState) {
+                        case WifiManager.WIFI_STATE_DISABLED:
+
+                            break;
+                        case WifiManager.WIFI_STATE_DISABLING:
+
+                            // 断开
+                            disConnect();
+
+                            break;
+                    }
+                }
+                // 监听wifi的连接状态即是否连上了一个有效无线路由
+                if (WifiManager.NETWORK_STATE_CHANGED_ACTION.equals(intent.getAction())) {
+                    Parcelable parcelableExtra = intent
+                            .getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+                    if (null != parcelableExtra) {
+                        // 获取联网状态的NetWorkInfo对象
+                        NetworkInfo networkInfo = (NetworkInfo) parcelableExtra;
+                        //获取的State对象则代表着连接成功与否等状态
+                        NetworkInfo.State state = networkInfo.getState();
+                        //判断网络是否已经连接
+                        boolean isConnected = state == NetworkInfo.State.CONNECTED;
+                        Log.e("TAG", "isConnected:" + isConnected);
+                        if (isConnected) {
+                            // 重连
+                            reConnectDelay();
+                        }else {
+                            // 断开
+                            disConnect();
+                        }
+                    }
+                }
+                // 监听网络连接，包括wifi和移动数据的打开和关闭,以及连接上可用的连接都会接到监听
+                if (ConnectivityManager.CONNECTIVITY_ACTION.equals(intent.getAction())) {
+                    //获取联网状态的NetworkInfo对象
+                    NetworkInfo info = intent.getParcelableExtra(ConnectivityManager.EXTRA_NETWORK_INFO);
+                    if (info != null) {
+                        //如果当前的网络连接成功并且网络连接可用
+                        if (NetworkInfo.State.CONNECTED == info.getState() && info.isAvailable()) {
+                            if (info.getType() == ConnectivityManager.TYPE_WIFI || info.getType() == ConnectivityManager.TYPE_MOBILE) {
+                                // 重连
+                                reConnectDelay();
+                            }else {
+                                // 断开
+                                disConnect();
+                            }
+                        }
+                    }
+                }
+            }
+        };
+        registerReceiver(mNetChangeReceiver,intentFilter);
     }
 
     @Override
@@ -153,7 +285,8 @@ public class SyncService extends Service {
 
             @Override
             public void onConnectFailed() {
-
+                // 重连
+                reConnectDelay();
                 Log.e(TAG,"onConnectFailed");
             }
 
@@ -165,10 +298,26 @@ public class SyncService extends Service {
 
             @Override
             public void onDisconnect(SocketTransceiver transceiver) {
+                isLogining = false;
+
+                // 关闭轮询
+                stopTimer();
+                // 重连
+                reConnectDelay();
                 Log.e(TAG,"onDisconnect");
             }
         };
         mClient.connect(Common.SYNC_SERVER_IP,Common.SYNC_SERVER_PORT);  //192.168.0.139//119.23.238.102
+    }
+
+    private void reConnectDelay(){
+        mHandler.sendEmptyMessageDelayed(Common.RECONNECT_ID, DEFAULT_RECONNECT_DELAY);
+    }
+
+    private void disConnect(){
+        if (mClient != null && mClient.isConnected()){
+            mClient.disconnect();
+        }
     }
 
     private void startTimer() {
@@ -176,12 +325,26 @@ public class SyncService extends Service {
         mTimerTask = new TimerTask() {
             @Override
             public void run() {
-                // 查询
-                fileQuery_syn();
-                //fileQuery();
+                // 不再上传中，则可以发送查询请求
+                if (!isUploading){
+                    // 查询
+                    fileQuery_syn();
+                    //fileQuery();
+                }
             }
         };
         mTimer.schedule(mTimerTask,1000,10*1000);
+    }
+
+    private void stopTimer(){
+        if (mTimer != null) {
+            mTimer.cancel();
+            mTimer = null;
+        }
+        if (mTimerTask != null) {
+            mTimerTask.cancel();
+            mTimerTask = null;
+        }
     }
 
     /**
@@ -219,25 +382,7 @@ public class SyncService extends Service {
                         break;
                     case Common.CMD_FILE_QUERY://获取文件列表
                         if ("1".equals(isOk)){
-                            //String response = (String) msg.obj;
-                            mFiles.clear();
-                            int indexS = response.indexOf(",",response.indexOf(",")+1); // 第二个逗号的位置
-                            if (indexS == response.length()-1){// 判断是否有列表
-                                mHandler.sendMessage(mHandler.obtainMessage(Common.CMD_FILE_QUERY_ID,Common.CMD_RESPONSE_SUCCESS,0,response));
-                                break;
-                            }
-                            String listStr = response.substring(indexS+1,response.length()-1);
-                            String[] array = listStr.split(";");
-                            for (int i = 0; i < array.length; i++) {
-                                String[] arrayContent = array[i].split(",");
-                                SyncFileBean bean = new SyncFileBean();
 
-                                bean.setName(arrayContent[0]);
-                                bean.setLength(Long.valueOf(arrayContent[1]));
-                                bean.setTime(arrayContent[2]);
-                                bean.setDownLoad(false);
-                                mFiles.add(bean);
-                            }
                             mHandler.sendMessage(mHandler.obtainMessage(Common.CMD_FILE_QUERY_ID,Common.CMD_RESPONSE_SUCCESS,0,response));
 
                         }else {
@@ -272,12 +417,53 @@ public class SyncService extends Service {
                         break;
                     case Common.CMD_FILE_DEL:
                         // 删除
-
+                        if ("1".equals(isOk)){
+                            mHandler.sendMessage(mHandler.obtainMessage(Common.CMD_FILE_DEL_ID,Common.CMD_RESPONSE_SUCCESS,0,response));
+                        }else {
+                            mHandler.sendMessage(mHandler.obtainMessage(Common.CMD_FILE_DEL_ID,Common.CMD_RESPONSE_FAILED,0,response));
+                        }
                         break;
                     case Common.CMD_FILE_QUERY_SYN:
                         //
                         if ("1".equals(isOk)){
 
+                            int indexS = response.indexOf(",",response.indexOf(",")+1); // 第二个逗号的位置
+                            if (indexS == response.length()-1){// 判断是否有列表
+                                mHandler.sendMessage(mHandler.obtainMessage(Common.CMD_FILE_QUERY_ID,Common.CMD_RESPONSE_SUCCESS,0,response));
+                                break;
+                            }
+                            String listStr = response.substring(indexS+1,response.length()-1);
+                            String[] array = listStr.split(";");
+                            for (int i = 0; i < array.length; i++) {
+                                String[] arrayContent = array[i].split(",");
+                                String fileName = arrayContent[0];
+                                if (fileName != null && !TextUtils.isEmpty(fileName)){
+                                    if (fileName.startsWith("P_")){
+                                        if (fileName.startsWith("P_Del_")){
+                                            // 删除
+                                            File file = new File(Common.DEFAULT_DIR+File.separator+mAccount+File.separator+fileName.substring("P_Del_".length()));
+                                            if (file.exists()){
+                                                // 删除本地文件
+                                                if (FileUtil.delete(file.getAbsolutePath())){
+                                                    // 删除成功 通知服务器
+                                                    fileDel_syn(file.getName());
+                                                    // 执行删除操作后 更新页面
+                                                    EventBus.getDefault().post(new UpdateFilesMessage());
+                                                }else {
+                                                    Log.e(TAG,fileName.substring("P_Del_".length())+"删除失败 !");
+                                                }
+                                            }else {
+                                                // 不存在 当做已删除 通知服务器
+                                                fileDel_syn(file.getName());
+                                                Log.e(TAG,fileName.substring("P_Del_".length())+"不存在 !");
+                                            }
+                                        }else {
+                                            // TODO 下载
+                                            fileDown(fileName);
+                                        }
+                                    }
+                                }
+                            }
                         }else {
 
                         }
@@ -331,9 +517,7 @@ public class SyncService extends Service {
         if (!mClient.isConnected() || isLogining) return;
         String login = SyncSender.login(mAccount,mPassword);
         if (mClient.isConnected()){
-            Observable.create(e ->  {
-                mSocketTransceiver.send(login);
-            }).subscribeOn(Schedulers.io()).subscribe();
+            mSocketTransceiver.send(login);
         }
     }
 
@@ -341,9 +525,7 @@ public class SyncService extends Service {
         if (!isLogining || !mClient.isConnected()) return;
         String fileQuery = SyncSender.filequery();
         if (mClient.isConnected()){
-            Observable.create(e ->  {
-                mSocketTransceiver.send(fileQuery);
-            }).subscribeOn(Schedulers.io()).subscribe();
+            mSocketTransceiver.send(fileQuery);
         }
     }
 
@@ -351,9 +533,7 @@ public class SyncService extends Service {
         if (!isLogining || !mClient.isConnected()) return;
         String fileUp = SyncSender.fileup(file.getName());
         if (mClient.isConnected()){
-            Observable.create(e -> {
-                mSocketTransceiver.send(fileUp,fileSize);
-            }).subscribeOn(Schedulers.io()).subscribe();
+            mSocketTransceiver.send(fileUp,fileSize);
         }
 
     }
@@ -362,9 +542,8 @@ public class SyncService extends Service {
         if (!isLogining || !mClient.isConnected()) return;
         String fileDown = SyncSender.filedown(fileName);
         if (mClient.isConnected()){
-            Observable.create(e -> {
-                mSocketTransceiver.send(fileDown);
-            }).subscribeOn(Schedulers.io()).subscribe();
+
+            mSocketTransceiver.send(fileDown);
         }
     }
 
@@ -375,6 +554,7 @@ public class SyncService extends Service {
             Observable.create(e -> {
                 mSocketTransceiver.send(fileDel);
             }).subscribeOn(Schedulers.io()).subscribe();
+//            mSocketTransceiver.send(fileDel);
         }
     }
 
@@ -382,10 +562,8 @@ public class SyncService extends Service {
         if (!isLogining || !mClient.isConnected()) return;
         String filequery_syn = SyncSender.filequery_syn();
         if (mClient.isConnected()){
-            Observable.create(e -> {
-                Log.e(TAG,"send fileQuery_syn");
-                mSocketTransceiver.send(filequery_syn);
-            }).subscribeOn(Schedulers.io()).subscribe();
+
+            mSocketTransceiver.send(filequery_syn);
         }
     }
 
@@ -393,10 +571,8 @@ public class SyncService extends Service {
         if (!isLogining || !mClient.isConnected()) return;
         String filedel_syn = SyncSender.filedel_syn(fileName);
         if (mClient.isConnected()){
-            Observable.create(e -> {
 
-                mSocketTransceiver.send(filedel_syn);
-            }).subscribeOn(Schedulers.io()).subscribe();
+            mSocketTransceiver.send(filedel_syn);
         }
     }
 
@@ -404,10 +580,8 @@ public class SyncService extends Service {
         if (!isLogining || !mClient.isConnected()) return;
         String fileupdated_syn = SyncSender.fileupdated_syn(fileName);
         if (mClient.isConnected()){
-            Observable.create(e -> {
 
-                mSocketTransceiver.send(fileupdated_syn);
-            }).subscribeOn(Schedulers.io()).subscribe();
+            mSocketTransceiver.send(fileupdated_syn);
         }
     }
 
@@ -418,63 +592,72 @@ public class SyncService extends Service {
         private File mFile;
         private List<File> mFiles = new ArrayList<>();
         private FileInputStream mFileInputStream;
-        public UploadThread(String filePath){
-            mFilePath = filePath;
-        }
-
 
         @Override
         public void run() {
             try {
-                mFile = new File(mFilePath);
+                while (true){
+                    // 取文件地址
+                    mFilePath = mUploadFileQueue.take();
+                    // 加入正在上传队列
+                    mUploadingQueue.put(mFilePath);
+                    if (mFilePath != null){
+                        mFile = new File(mFilePath);
+                        if (mFile.isDirectory()){
+                            // 清空集合
+                            mFiles.clear();
+                            // 获取文件夹中文件
+                            searchFiles(mFile);
+                            //
+                            for (File file:mFiles){
+                                mFileInputStream = new FileInputStream(file);
+                                int fileSize = (int) file.length();
+                                Log.e(TAG,"fileSize: "+fileSize);
+                                isUploading = true;
+                                // 上传命令
+                                fileUp(file,fileSize);
 
-                if (mFile.isDirectory()){
-                    // 获取文件夹中文件
-                    searchFiles(mFile);
-                    //
-                    for (File file:mFiles){
-                        mFileInputStream = new FileInputStream(file);
-                        int fileSize = (int) file.length();
-                        Log.e(TAG,"fileSize: "+fileSize);
-                        // 上传命令
-                        fileUp(file,fileSize);
+                                byte[] buf = new byte[1024*1024];
+                                int count;
 
-                        byte[] buf = new byte[1024*1024];
-                        int count;
+                                while ((count = mFileInputStream.read(buf)) != -1){
 
-                        while ((count = mFileInputStream.read(buf)) != -1){
-                            Log.e(TAG,fileSize+"buf count "+count);
-                            byte[] content = new byte[count];
-                            System.arraycopy(buf,0,content,0,count);
-                            if (mClient.isConnected()){
-                                Observable.create(e1->{
-                                    mSocketTransceiver.send(content);
-                                }).subscribeOn(Schedulers.io()).subscribe();
+                                    Log.e(TAG,fileSize+"buf count "+count);
+                                    byte[] content = new byte[count];
+                                    System.arraycopy(buf,0,content,0,count);
+                                    if (mClient.isConnected()){
+                                        mSocketTransceiver.send(content);
+                                    }
+                                }
                             }
-                        }
-                    }
-                }else {
-                    mFileInputStream = new FileInputStream(mFile);
-                    int fileSize = (int) mFile.length();
-                    Log.e(TAG,"fileSize: "+fileSize);
-                    // 上传命令
-                    fileUp(mFile,fileSize);
+                            isUploading = false;
+                        }else {
+                            mFileInputStream = new FileInputStream(mFile);
+                            int fileSize = (int) mFile.length();
+                            Log.e(TAG,"fileSize: "+fileSize);
+                            isUploading = true;
+                            // 上传命令
+                            fileUp(mFile,fileSize);
 
-                    byte[] buf = new byte[1024*1024];
-                    int count;
+                            byte[] buf = new byte[1024*1024];
+                            int count;
 
-                    while ((count = mFileInputStream.read(buf)) != -1){
-                        Log.e(TAG,fileSize+"buf count "+count);
-                        byte[] content = new byte[count];
-                        System.arraycopy(buf,0,content,0,count);
-                        if (mClient.isConnected()){
-                            Observable.create(e1->{
-                                mSocketTransceiver.send(content);
-                            }).subscribeOn(Schedulers.io()).subscribe();
+                            while ((count = mFileInputStream.read(buf)) != -1){
+
+                                Log.e(TAG,fileSize+"buf count "+count);
+                                byte[] content = new byte[count];
+                                System.arraycopy(buf,0,content,0,count);
+                                if (mClient.isConnected()){
+                                    mSocketTransceiver.send(content);
+                                }
+                            }
+                            isUploading = false;
                         }
                     }
                 }
             } catch (IOException e) {
+                e.printStackTrace();
+            } catch (InterruptedException e) {
                 e.printStackTrace();
             }
         }
@@ -489,7 +672,6 @@ public class SyncService extends Service {
                     mFiles.add(f);
                 }
             }
-
         }
 
     }
@@ -502,7 +684,7 @@ public class SyncService extends Service {
         private String mFileName;
         private int mFileSize;
         public DownloadThread(String fileName, int fileSize){
-            this.mFileName = fileName;
+            this.mFileName = fileName.substring("P_".length());
             this.mFileSize = fileSize;
         }
 
@@ -510,12 +692,11 @@ public class SyncService extends Service {
         public void run() {
             try {
                 int count =0;
-                getAlbumStorageDir(Common.SAVE_DIR_NAME);
-                File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS)+
-                        File.separator + Common.SAVE_DIR_NAME + File.separator + mFileName);
+                getAlbumStorageDir(Common.SAVE_DIR_NAME+File.separator+mAccount);
+                File file = new File(Common.DEFAULT_DIR + File.separator + mAccount+ File.separator + mFileName);
                 mFileOutputStream = new FileOutputStream(file);
-                while (count < mFileSize){
-                    byte[] bytes = mCurrentDownloadQueue.poll();
+                while (count < mFileSize && mClient.isConnected()){
+                    byte[] bytes = mCurrentDownloadQueue.take();
                     if (bytes == null){
                         Log.e(TAG,"bytes is null"+mCurrentDownloadQueue.size());
                         continue;
@@ -524,11 +705,18 @@ public class SyncService extends Service {
                     count += bytes.length;
                     Log.e(TAG,"count "+count+" bytes: "+bytes.length);
                 }
-                // TODO 下载完成 更新
-
+                if (count == mFileSize){
+                    // TODO 下载完成 更新
+                    mHandler.sendMessage(mHandler.obtainMessage(Common.CMD_FILE_DOWN_ID,Common.CMD_RESPONSE_SUCCESS,Common.CMD_FILE_DOWN_FINISH,file));
+                }else {
+                    // TODO 异常停止传输
+                    mHandler.sendMessage(mHandler.obtainMessage(Common.CMD_FILE_DOWN_ID,Common.CMD_RESPONSE_SUCCESS,Common.CMD_FILE_DOWN_ERROR,file));
+                }
             } catch (IOException e) {
                 e.printStackTrace();
                 Log.e(TAG,"error "+e);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
         }
 
@@ -548,7 +736,7 @@ public class SyncService extends Service {
         }
     }
 
-    @Subscribe
+    @Subscribe()
     public void onMessageEvent(SyncMessage syncMessage) {
         Object object = syncMessage.getObject();
 
@@ -560,7 +748,8 @@ public class SyncService extends Service {
             case Common.CMD_FILE_UP:
                 // 上传
                 Log.e(TAG,"path "+(String)object);
-                new UploadThread((String)object).start();
+                mUploadFileQueue.add((String)object);
+
                 break;
             case Common.CMD_FILE_QUERY:
                 // 查询
@@ -572,7 +761,7 @@ public class SyncService extends Service {
                 break;
             case Common.CMD_FILE_DEL:
                 // 删除
-
+                fileDel((String) object);
                 break;
             case Common.CMD_FILE_QUERY_SYN:
                 //
@@ -586,23 +775,23 @@ public class SyncService extends Service {
                 //
 
                 break;
-            default:break;
+            default:
+                break;
         }
     }
 
     @Override
     public void onDestroy() {
-        super.onDestroy();
+        // 存储未上传完成的文件
+        SharePreferenceUtil.put(getApplicationContext(),Common.KEY_UPLOAD_QUQUE,mUploadingQueue);
+
         mHandlerThread.quit();
-        if (mTimer != null) {
-            mTimer.cancel();
-            mTimer = null;
-        }
-        if (mTimerTask != null) {
-            mTimerTask.cancel();
-            mTimerTask = null;
-        }
+        // 关闭轮询
+        stopTimer();
         Log.e(TAG,"onDestroy");
+        // 注销广播
+        unregisterReceiver(mNetChangeReceiver);
         EventBus.getDefault().unregister(this);
+        super.onDestroy();
     }
 }

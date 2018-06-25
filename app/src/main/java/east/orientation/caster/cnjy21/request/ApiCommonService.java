@@ -35,8 +35,8 @@ import east.orientation.caster.local.Common;
 
 public class ApiCommonService  {
     public static int ERROR_NULL_CODE = 0x1001;
-    public static String ERROR_NULL_MSG = "NullPointerException";
-
+    public static final String ERROR_NULL_MSG = "NullPointerException";
+    public static final long DEFAULT_CACHE_TIME = 10*60*1000;
     /**
      * 学段 1:小学     2:中学    3:高中
      *
@@ -50,7 +50,9 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_SUBJECTS)
                 .tag("getSubjects")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheKey(String.format("getSubjects_stage = %d",stage))
+                .cacheMode(CacheMode.FIRST_CACHE)
+                .cacheTime(DEFAULT_CACHE_TIME)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Subject>>>>() {
                     @Override
@@ -98,7 +100,9 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_VERSIONS)
                 .tag("getVersions")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheKey(String.format("getVersions_stage = %d,subjectId = %d",_stage,_subjectId))
+                .cacheMode(CacheMode.FIRST_CACHE)
+                .cacheTime(DEFAULT_CACHE_TIME)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Version>>>>() {
                     @Override
@@ -143,7 +147,9 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_BOOKS)
                 .tag("getBooks")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheKey(String.format("getBooks_versionId = %d",_versionId))
+                .cacheMode(CacheMode.FIRST_CACHE)
+                .cacheTime(DEFAULT_CACHE_TIME)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Book>>>>() {
                     @Override
@@ -187,7 +193,9 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_CHAPTERS)
                 .tag("getChapters")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheKey(String.format("getChapters_bookId = %d",_bookId))
+                .cacheMode(CacheMode.FIRST_CACHE)
+                .cacheTime(DEFAULT_CACHE_TIME)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Chapter>>>>() {
                     @Override
@@ -235,7 +243,9 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_KNOWLEDGEPOINTS)
                 .tag("getKnowledgePoints")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheKey(String.format("getKnowledgePoints_stage = %d,subjectId = %d",_stage,_subjectId))
+                .cacheMode(CacheMode.FIRST_CACHE)
+                .cacheTime(DEFAULT_CACHE_TIME)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<KnowledgePoint>>>>() {
                     @Override
@@ -275,7 +285,9 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_PROVINCES)
                 .tag("getProvinces")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheKey(String.format("getProvinces"))
+                .cacheMode(CacheMode.FIRST_CACHE)
+                .cacheTime(DEFAULT_CACHE_TIME)
                 .request(new ACallback<CacheResult<BaseResponse<List<Province>>>>() {
                     @Override
                     public void onSuccess(CacheResult<BaseResponse<List<Province>>> response) {
@@ -328,7 +340,7 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_DOCUMENT_DETAIL)
                 .tag("getDocumentsDownurls")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheMode(CacheMode.CACHE_AND_REMOTE)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Document>>>>() {
                     @Override
@@ -371,8 +383,9 @@ public class ApiCommonService  {
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_DOCUMENT_DETAIL)
                 .tag("getDocumentDownurl")
+                .cacheKey(String.format("getDocumentDownurl_itemId = %d",itemid))
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheMode(CacheMode.ONLY_REMOTE)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Document>>>>() {
                     @Override
@@ -414,6 +427,7 @@ public class ApiCommonService  {
      * @param callback
      */
     public static void getDocuments(int stage,int subjectId,String chapterId, int page ,int perPage,ACallback<List<Document>> callback) {
+        Log.e("_ApiCommonService_","getDocuments");
         Map<String,String> params = new HashMap<>();
         params.put("stage",String.valueOf(stage));
         params.put("subjectId",String.valueOf(subjectId));
@@ -425,7 +439,9 @@ public class ApiCommonService  {
         ViseHttp.GET(APIConstant.URL_DOCUMENTS)
                 .tag("getDocuments")
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheKey(String.format("getDocuments_stage = %d,subjectId = %d,chapterId = %s,page = %d,perPage = %d",stage,subjectId,chapterId,page,perPage))
+                .cacheMode(CacheMode.FIRST_CACHE)
+                .cacheTime(60*1000)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Document>>>>() {
                     @Override
@@ -468,8 +484,9 @@ public class ApiCommonService  {
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_DOCUMENT_PREVIEW)
                 .tag("getPreviews")
+                .cacheKey(String.format("getPreview_itemId = %d",_itemId))
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheMode(CacheMode.CACHE_AND_REMOTE)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Preview>>>>() {
                     @Override
@@ -549,8 +566,9 @@ public class ApiCommonService  {
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_QUESTIONS)
                 .tag("getQuestions")
+                .cacheKey(String.format("getQuestions_stage = %d,subjectId = %d,page = %d,perPage = %d",stage,subjectId,page,perPage))
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheMode(CacheMode.CACHE_AND_REMOTE)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Question>>>>() {
                     @Override
@@ -597,8 +615,9 @@ public class ApiCommonService  {
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_QUESTION_TYPES)
                 .tag("getQuestionTypes")
+                .cacheKey(String.format("getQuestionTypes_stage = %d,subjectId = %d",_stage,_subjectId))
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheMode(CacheMode.CACHE_AND_REMOTE)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<QuestionType>>>>() {
                     @Override
@@ -700,8 +719,9 @@ public class ApiCommonService  {
         setSignParams(params);
         ViseHttp.GET(APIConstant.URL_QUESTION_DETAIL)
                 .tag("getQuestionAnswer")
+                .cacheKey(String.format("getQuestionAnswer_questionId = %d",question.getQuestionId()))
                 .setLocalCache(true)
-                .cacheMode(CacheMode.FIRST_REMOTE)
+                .cacheMode(CacheMode.CACHE_AND_REMOTE)
                 .params(params)
                 .request(new ACallback<CacheResult<BaseResponse<List<Question>>>>() {
                     @Override
@@ -740,11 +760,11 @@ public class ApiCommonService  {
      * @param fileName
      * @param callback
      */
-    public static void downLoad(String url,String fileName,ACallback<DownProgress> callback){
-        File file = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+    public static void downLoad(String url,String fileName,String account,ACallback<DownProgress> callback){
+        File file = new File(Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),Common.SAVE_DIR_NAME);
         ViseHttp.DOWNLOAD(url)
                 .setFileName(fileName)//文件名
-                .setDirName(Common.SAVE_DIR_NAME)// 文件夹
+                .setDirName(account)// 文件夹
                 .setRootName(file.getAbsolutePath())// 根目录
                 .request(new ACallback<DownProgress>() {
                     @Override

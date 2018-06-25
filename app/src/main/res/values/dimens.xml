@@ -9,4 +9,6 @@
     <dimen name="sub_action_button_size">56dp</dimen>
     <dimen name="sub_action_button_content_margin">6dp</dimen>
 
+    <dimen name="intent_res_tab_height">40dp</dimen>
+
 </resources>

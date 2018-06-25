@@ -9,29 +9,41 @@
         android:id="@+id/item_file_icon"
         android:layout_width="48dp"
         android:layout_height="48dp"
-
         android:src="@mipmap/ic_doc_generic_am"/>
-    <TextView
-        android:id="@+id/item_file_name"
-        android:text="name"
-        android:textStyle="bold"
-        android:layout_toEndOf="@+id/item_file_icon"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginLeft="10dp"/>
-
-    <TextView
-        android:id="@+id/item_file_size"
-        android:text="size"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_alignParentRight="true"/>
-    <TextView
-        android:id="@+id/item_file_date"
-        android:text="date"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_below="@+id/item_file_size"
-        android:layout_alignParentRight="true"
-        android:layout_alignBottom="@+id/item_file_icon"/>
+    <LinearLayout
+        android:id="@+id/ll_content"
+        android:layout_width="match_parent"
+        android:layout_height="48dp"
+        android:orientation="horizontal"
+        android:layout_toRightOf="@id/item_file_icon">
+        <TextView
+            android:id="@+id/item_file_name"
+            android:text="name"
+            android:textStyle="bold"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:maxLines="1"
+            android:layout_marginLeft="10dp"
+            android:layout_weight="1"/>
+        <LinearLayout
+            android:layout_width="wrap_content"
+            android:layout_height="match_parent"
+            android:orientation="vertical">
+            <TextView
+                android:id="@+id/item_file_size"
+                android:text="size"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:gravity="end"
+                android:layout_gravity="end"
+                android:layout_weight="1"/>
+            <TextView
+                android:id="@+id/item_file_date"
+                android:text="date"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_gravity="bottom"
+                android:gravity="bottom|end"/>
+        </LinearLayout>
+    </LinearLayout>
 </RelativeLayout>

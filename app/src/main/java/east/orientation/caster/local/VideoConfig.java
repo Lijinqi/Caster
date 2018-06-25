@@ -8,7 +8,7 @@ package east.orientation.caster.local;
 
 public class VideoConfig {
     public static final int REQUEST_CODE_SCREEN_CAPTURE = 0x10;
-    public static final int DEFAULT_SCREEN_DPI = 1;
+    public static final int DEFAULT_SCREEN_DPI = 160;
     public static final int DEFAULT_I_FRAME_INTERVAL = 2;//1 seconds between I-frames
 
     // 屏幕宽高比
@@ -22,9 +22,10 @@ public class VideoConfig {
 
     // 比特率
     public static final int[] BITRATE_OPTIONS = {
+            6144*1000, // 6M bps
+            4096*1000, // 4M bps
             2048*1000 , // 2M bps
             1024*1000, // 1M bps
-            800*1000 // 800k bps
     };
 
     // fps  frame-rate

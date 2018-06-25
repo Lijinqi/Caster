@@ -14,6 +14,7 @@ import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
+import android.view.WindowManager;
 import android.widget.ImageView;
 import android.widget.Toast;
 
@@ -73,14 +74,10 @@ import static east.orientation.caster.local.VideoConfig.REQUEST_CODE_SCREEN_CAPT
 public class MainActivity extends AppCompatActivity{
     private static final String TAG = "MainActivity";
 
-    private Handler mHandler;
-    private ConstraintLayout mContent;
-    private ImageView mIvTheme;
-
     private boolean isVertical;
     private int mResultCode;// 请求录屏权限返回的 code
     private Intent mResultData;//请求录屏权限返回的 intent
-
+    private boolean isReset;
     // 屏幕旋转监听
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -111,7 +108,7 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketIOThreadShutdown(Context context, String action, Exception e) {
             super.onSocketIOThreadShutdown(context, action, e);
-            Log.e(TAG,"onSocketIOThreadShutdown"+e);
+            Log.e("@@","onSocketIOThreadShutdown"+e);
             // 重置搜索广播
             resetSearcher();
             ToastUtil.showToast("服务器断开", Toast.LENGTH_LONG);
@@ -120,35 +117,38 @@ public class MainActivity extends AppCompatActivity{
         @Override
         public void onSocketDisconnection(Context context, ConnectionInfo info, String action, Exception e) {
             super.onSocketDisconnection(context, info, action, e);
+            Log.e("@@","onSocketDisconnection"+e);
             // 重置搜索广播
             resetSearcher();
-            Log.e(TAG,"onSocketDisconnection"+e);
         }
 
         @Override
         public void onSocketConnectionSuccess(Context context, ConnectionInfo info, String action) {
             super.onSocketConnectionSuccess(context, info, action);
+            isReset = false;
             // 设置连接状态
             getAppInfo().setServerConnected(true);
             // 连接成功则发送心跳
             getAppInfo().getConnectionManager().getPulseManager().setPulseSendable(new Pluse(1)).pulse();
             // 连接成功则发送登陆请求
             getAppInfo().getConnectionManager().send(new LoginRequest(Common.LOGIN_TYPE_TEACHER));
-            Log.e(TAG,"onSocketConnectionSuccess");
+            Log.e("@@","onSocketConnectionSuccess");
             ToastUtil.showToast("已连接服务器", Toast.LENGTH_LONG);
         }
 
         @Override
         public void onSocketConnectionFailed(Context context, ConnectionInfo info, String action, Exception e) {
             super.onSocketConnectionFailed(context, info, action, e);
+            Log.e("@@","onSocketConnectionFailed"+e);
+            isReset = false;
             // 重置搜索广播
             resetSearcher();
-            Log.e(TAG,"onSocketConnectionFailed"+e);
         }
 
         @Override
         public void onSocketReadResponse(Context context, ConnectionInfo info, String action, OriginalData data) {
             super.onSocketReadResponse(context, info, action, data);
+            //Log.e(TAG,"onSocketReadResponse");
             // 处理回执
             handleResponse(data);
         }
@@ -169,6 +169,8 @@ public class MainActivity extends AppCompatActivity{
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        // 隐藏窗口
+        hideWindow();
         // 注册eventbus
         EventBus.getDefault().register(this);
         // runtime permission
@@ -178,9 +180,15 @@ public class MainActivity extends AppCompatActivity{
         init();
 
         setContentView(R.layout.activity_main);
-        mContent = findViewById(R.id.content);
-        mIvTheme = findViewById(R.id.iv_theme);
+    }
 
+    private void hideWindow(){
+        WindowManager.LayoutParams params = new WindowManager.LayoutParams();
+        params.width =  0;
+        params.height = 0 ;//此句用于自定义窗口大小，实现Activity窗口非全屏显示
+        params.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+        this.getWindow().setAttributes(params);//params2用于设备整个Activity的窗口属性
     }
 
     /**
@@ -215,6 +223,7 @@ public class MainActivity extends AppCompatActivity{
      * 重置 搜索广播 、客户端连接状态
      */
     private void resetSearcher(){
+        if (isReset) return;
         // 设置连接状态
         getAppInfo().setServerConnected(false);
         // 发送停止投屏广播
@@ -222,40 +231,48 @@ public class MainActivity extends AppCompatActivity{
         // 开启接收udp广播
         stopSearchServer();
         startSearchServer();
+        isReset = true;
     }
 
+    private Object mLock = new Object();
     /**
      * 连接服务器
      * @param ip
      */
     private void connectToServer(String ip,int port){
-        mConnectionInfo = new ConnectionInfo(ip, port);
-        getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo));
-        OkSocket.setBackgroundSurvivalTime(-1);
-        if (getAppInfo().getConnectionManager() == null) {
-            Log.e(TAG,"ConnectionManager is null");
-            return;
-        }
+            Log.e("@@","connect "+ip+" "+port);
+            if (getAppInfo().getConnectionManager()!=null && getAppInfo().getConnectionManager().isConnect()) {
+                return;
+            }
+            mConnectionInfo = new ConnectionInfo(ip, port);
+            getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo));
+            OkSocket.setBackgroundSurvivalTime(-1);
+            if (getAppInfo().getConnectionManager() == null) {
+                Log.e(TAG,"ConnectionManager is null");
+                return;
+            }
 
-        mOkOptions = getAppInfo().getConnectionManager().getOption();
+            mOkOptions = getAppInfo().getConnectionManager().getOption();
 
-        mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
-                .setWritePackageBytes(1024*1024)// 设置每个包的长度
-                .setHeaderProtocol(new NormalHeaderProtocol())// 设置自定义包头
-                .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
-                .setPulseFrequency(1000)// 设置心跳间隔/毫秒
-                .setPulseFeedLoseTimes(2)
-                .setReconnectionManager(new NoneReconnect())
-                //.setConnectionHolden(false)
-                .build();
-        getAppInfo().getConnectionManager().option(mOkOptions);
-        getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
-        getAppInfo().getConnectionManager().registerReceiver(mSocketActionAdapter);
-        Log.e(TAG,"ConnectionManager set");
-        if (!getAppInfo().getConnectionManager().isConnect()) {
-            Log.e(TAG,"ConnectionManager connect");
-            getAppInfo().getConnectionManager().connect();
-        }
+            mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
+                    .setWritePackageBytes(1024*1024)// 设置每个包的长度
+                    .setHeaderProtocol(new NormalHeaderProtocol())// 设置自定义包头
+                    .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
+                    .setPulseFrequency(3000)// 设置心跳间隔/毫秒
+                    .setReconnectionManager(new NoneReconnect())
+                    //.setConnectionHolden(false)
+                    .build();
+            getAppInfo().getConnectionManager().option(mOkOptions);
+            getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
+            getAppInfo().getConnectionManager().registerReceiver(mSocketActionAdapter);
+            Log.e(TAG,"ConnectionManager set");
+            synchronized (mLock){
+                if (!getAppInfo().getConnectionManager().isConnect()) {
+                    Log.e(TAG,"ConnectionManager connect");
+                    getAppInfo().getConnectionManager().connect();
+                }
+            }
+        Log.e("@@","end  connect "+ip+" "+port);
     }
 
     /**
@@ -306,10 +323,15 @@ public class MainActivity extends AppCompatActivity{
             case Common.FLAG_SCREEN_LARGE_SIZE_RESPONSE:
                 int large_width = BytesUtils.bytesToInt(body,0);
                 int large_height = BytesUtils.bytesToInt(body,4);
-
+                //
+                WindowFloatManager.getInstance().initScroll(large_width,large_height);
+                // 开始投屏
+                getAppInfo().getConnectionManager().send(new StartCastRequest());
                 WindowFloatManager.getInstance().setLineStartChangeListener(new WindowFloatManager.LineStartChangeListener() {
                     @Override
                     public void onChange(int left, int top, int right, int bottom) {
+
+                        Log.e(TAG,WindowFloatManager.getInstance().isROTATION_0()+" Change left "+left+" top "+top+" right "+right+" bottom "+bottom);
                         // 发送选中区域
                         getAppInfo().getConnectionManager().send(new SelectRectResponse(left,top,right,bottom));
                     }
@@ -317,13 +339,11 @@ public class MainActivity extends AppCompatActivity{
                     @Override
                     public void onPrepare(int left, int top, int right, int bottom) {
                         // 发送选中区域
+                        Log.e(TAG,"Prepare  left "+left+" top "+top+" right "+right+" bottom "+bottom);
                         getAppInfo().getConnectionManager().send(new SelectRectResponse(left,top,right,bottom));
                     }
                 });
-                //
-                WindowFloatManager.getInstance().initScroll(large_width,large_height);
-                // 开始投屏
-                getAppInfo().getConnectionManager().send(new StartCastRequest());
+
                 break;
             default:
                 break;
@@ -393,7 +413,7 @@ public class MainActivity extends AppCompatActivity{
                 if (projectionManager != null) {
 
                     if(mResultData != null && mResultCode == RESULT_OK){
-                        if (isVertical){
+                        if (WindowFloatManager.getInstance().isROTATION_0()){
                             // 重新获取分辨率
                             WindowFloatManager.getInstance().setScreen();
                         }else {

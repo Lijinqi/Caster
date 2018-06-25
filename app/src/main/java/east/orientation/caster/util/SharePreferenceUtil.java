@@ -10,6 +10,10 @@ import android.widget.ImageView;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.Serializable;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.Map;
@@ -49,12 +53,28 @@ public class SharePreferenceUtil {
         } else if (object instanceof Long)
         {
             editor.putLong(key, (Long) object);
+        } else if (object instanceof Serializable)
+        {
+            putSerializable(editor,key,object);
         } else
         {
             editor.putString(key, object.toString());
         }
 
         SharedPreferencesCompat.apply(editor);
+    }
+
+    private static void putSerializable(SharedPreferences.Editor editor,String key,Object object) {
+        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        try {
+            ObjectOutputStream oos = new ObjectOutputStream(baos);
+            oos.writeObject(object);//把对象写到流里
+            String temp = new String(Base64.encode(baos.toByteArray(), Base64.DEFAULT));
+            editor.putString(key, temp);
+            editor.commit();
+        } catch (IOException e) {
+            e.printStackTrace();
+        }
     }
 
     public static void put(Context context, String key1, Object object1,String key2, Object object2){
@@ -85,9 +105,26 @@ public class SharePreferenceUtil {
         } else if (defaultObject instanceof Long)
         {
             return sp.getLong(key, (Long) defaultObject);
+        } else if (defaultObject instanceof Serializable)
+        {
+            return getSerializable(sp,key);
         }
 
         return null;
+    }
+
+    private static Object getSerializable(SharedPreferences sp,String key) {
+        String temp = sp.getString(key, "");
+        ByteArrayInputStream bais =  new ByteArrayInputStream(Base64.decode(temp.getBytes(), Base64.DEFAULT));
+        Object o = null;
+        try {
+            ObjectInputStream ois = new ObjectInputStream(bais);
+            o = ois.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+        }
+
+        return o;
     }
 
     public static int get(Context context, String key, int defaultObject){

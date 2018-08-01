@@ -6,19 +6,16 @@ import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.projection.MediaProjection;
-import android.os.Environment;
 import android.util.Log;
 import android.view.Surface;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.text.SimpleDateFormat;
-import java.util.Arrays;
-import java.util.Date;
 
 import east.orientation.caster.cast.CastScreenService;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.local.VideoConfig;
 import east.orientation.caster.util.SharePreferenceUtil;
+
 
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
@@ -122,6 +119,7 @@ public class ScreenRecorder  {
 
                 @Override
                 public void onOutputFormatChanged(MediaCodec codec, MediaFormat format) {
+                    Log.e(TAG,"onOutputFormatChanged");
                     // 得到sps pps
                     getSpsPpsByteBuffer(format);
                 }

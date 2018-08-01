@@ -43,6 +43,10 @@ public class Common  {
     public static final int FLAG_SCREEN_CUT_SIZE_REQUEST = 0x2009;//请求大屏分辨率
     public static final int FLAG_SCREEN_LARGE_SIZE_RESPONSE = 0x2010;//大屏回复  携带分辨率
     public static final int FLAG_SCREEN_CUT_SIZE_RESPONSE = 0x2011;//回复大屏  Rect坐标
+    public static final int FLAG_SCREEN_ROTATION = 0x2012;//屏幕横竖参数
+
+    public static final int FLAG_SCREEN_ROTATION_1 = 1;
+    public static final int FLAG_SCREEN_ROTATION_0 = 0;
 
     /**********************************************************/
     /**投屏相关常量**/
@@ -72,46 +76,5 @@ public class Common  {
     public static final String KEY_SIZE = "key_size";
     public static final String KEY_BITRATE = "key_bitrate";
     public static final String KEY_FPS = "key_fps";
-
-    // 网络资源相关
-
-
-    // 同步资源相关"192.168.0.139";//
-    public static final String SYNC_SERVER_IP = "119.23.238.102";// 服务器ip
-    public static final int SYNC_SERVER_PORT = 8888;// 服务器端口
-
-    public static final String KEY_ACCOUNT = "key_account";
-    public static final String KEY_PASSWD = "key_passwd";
-    public static final String DEFAULT_ACOUNT = "unknow";
-    public static final String KEY_UPLOAD_QUQUE = "key_upload_queue";
-
-    public static final String CMD_LOGIN = "login";
-    public static final String CMD_FILE_UP = "fileup";
-    public static final String CMD_FILE_QUERY = "filequery";
-    public static final String CMD_FILE_DOWN = "filedown";
-    public static final String CMD_FILE_DEL = "filedel";
-    public static final String CMD_FILE_QUERY_SYN = "filequery_syn";
-    public static final String CMD_FILE_DEL_SYN = "filedel_syn";
-    public static final String CMD_FILE_UPDATED_SYN = "fileupdated_syn";
-
-    public static final int CMD_LOGIN_ID = 1;
-    public static final int CMD_FILE_UP_ID = 2;
-    public static final int CMD_FILE_QUERY_ID = 3;
-    public static final int CMD_FILE_DOWN_ID = 4;
-    public static final int CMD_FILE_DEL_ID = 5;
-    public static final int CMD_FILE_QUERY_SYN_ID = 6;
-    public static final int CMD_FILE_DEL_SYN_ID = 7;
-    public static final int CMD_FILE_UPDATED_SYN_ID = 8;
-    public static final int RECONNECT_ID = 9;
-
-    public static final int CMD_RESPONSE_SUCCESS = 1;
-    public static final int CMD_RESPONSE_FAILED = 0;
-
-    public static final int CMD_FILE_DOWN_HEAD = 1;
-    public static final int CMD_FILE_DOWN_CONTENT = 2;
-    public static final int CMD_FILE_DOWN_FINISH = 3;
-    public static final int CMD_FILE_DOWN_ERROR = 4;
-
-
 
 }

@@ -13,26 +13,7 @@
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:background="@color/colorPrimary"
-        android:weightSum="10">
-
-        <Button
-            android:id="@+id/btn_draw"
-            style="@style/MainItemStyle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:drawableTop="@mipmap/ic_pen"
-
-            android:text="@string/main_pen" />
-
-        <Button
-            android:id="@+id/btn_res"
-            style="@style/MainItemStyle"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:drawableTop="@mipmap/ic_res"
-            android:text="@string/main_res" />
+        android:weightSum="8">
 
         <Button
             android:id="@+id/btn_castToLarge"

@@ -13,64 +13,13 @@
     <string name="main_setting">设置</string>
     <string name="main_exit">退出</string>
 
-    <!--ResActivity-->
-    <string name="res_internet">网络资源</string>
-    <string name="res_sync">同步资源</string>
-    <string name="res_local">本地资源</string>
 
-    <string name="sync_res_upload">上传</string>
-    <string name="sync_res_login">登录</string>
-
-    <string name="local_res_public">外部存储</string>
-    <string name="local_res_download">下载</string>
-    <string name="local_res_movies">视频</string>
-    <string name="local_res_music">音乐</string>
-    <string name="local_res_pictures">图片</string>
-    <string name="local_res_document">文档</string>
     
     <!--setting-->
     <string name="setting_user_name">姓名</string>
     <string name="setting_screen_size">分辨率</string>
     <string name="setting_bitrate">比特率</string>
     <string name="setting_fps">帧率</string>
-
-
-    <!--手写板-->
-    <string name="pen_render_sharp">笔锋</string>
-    <string name="pen_render_round">普通</string>
-
-    <string name="pen_type_pencil">铅笔</string>
-    <string name="pen_type_ballpoint">圆珠笔</string>
-    <string name="pen_type_pen">钢笔</string>
-    <string name="pen_type_brush">毛笔</string>
-    <string name="pen_type_fountain">水笔</string>
-
-    <string name="btn_type">笔型</string>
-    <string name="btn_color">颜色</string>
-    <string name="btn_eraser">橡皮</string>
-    <string name="in_rubber_mode">橡皮模式中</string>
-    <string name="btn_clean">清除</string>
-    <string name="btn_reverse">回退</string>
-    <string name="btn_insert_image">插入图片</string>
-    <string name="btn_insert_text">插入文本</string>
-    <string name="btn_save_image">存图</string>
-    <string name="btn_save_data">保存</string>
-    <string name="btn_sync_board">手写板</string>
-    <string name="btn_back">回退</string>
-    <string name="btn_forward">前进</string>
-    <string name="btn_render">渲染模式</string>
-
-    <string name="pen_color_orange">橘黄</string>
-    <string name="pen_color_red">红</string>
-    <string name="pen_color_yellow">黄</string>
-    <string name="pen_color_black">黑</string>
-    <string name="pen_color_blue">蓝</string>
-
-    <color name="pen_color_orange">#FF6600</color>
-    <color name="pen_color_red">#CC0000</color>
-    <color name="pen_color_yellow">#FFCC00</color>
-    <color name="pen_color_black">#000000</color>
-    <color name="pen_color_blue">#0000FF</color>
 
     <!--录屏-->
     <string name="service_ready_to_stream">录屏准备就绪</string>

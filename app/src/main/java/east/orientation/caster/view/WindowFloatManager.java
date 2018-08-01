@@ -6,7 +6,6 @@ import android.app.AppOpsManager;
 import android.content.Context;
 import android.content.Intent;
 import android.content.res.Resources;
-import android.graphics.Color;
 import android.graphics.PixelFormat;
 import android.os.Binder;
 import android.os.Build;
@@ -25,12 +24,11 @@ import org.greenrobot.eventbus.EventBus;
 import java.lang.reflect.Method;
 
 import east.orientation.caster.R;
+import east.orientation.caster.cast.request.ScreenRotationRequest;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.local.VideoConfig;
-import east.orientation.caster.ui.activity.ResActivity;
 import east.orientation.caster.ui.activity.SettingActivity;
-import east.orientation.caster.ui.activity.WriteActivity;
 import east.orientation.caster.util.RomUtils;
 import east.orientation.caster.util.SharePreferenceUtil;
 import east.orientation.caster.util.ToastUtil;
@@ -45,6 +43,8 @@ import static east.orientation.caster.CastApplication.getAppInfo;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_STOP;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_TRY_START;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK;
+import static east.orientation.caster.local.Common.FLAG_SCREEN_ROTATION_0;
+import static east.orientation.caster.local.Common.FLAG_SCREEN_ROTATION_1;
 
 
 /**
@@ -52,11 +52,12 @@ import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK
  */
 
 public class WindowFloatManager {
+    private static final String TAG = "WindowFloatManager";
     private static WindowManager sWindowManager;
     private static DisplayMetrics sDisplayMetrics;
     private static Context mContext;
 
-    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_cast_large,R.mipmap.ic_stu_screen,R.mipmap.ic_cast_all,R.mipmap.ic_setting};
+    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_cast_large,R.mipmap.ic_stu_screen,R.mipmap.ic_cast_all,R.mipmap.ic_setting,R.mipmap.ic_exit};
     private int[] mIconsId;
 
     private double px;// 大屏 H / W
@@ -135,13 +136,13 @@ public class WindowFloatManager {
         right = mScreenWidth;
         bottom = (int) (mScreenHeight * ((double)mLineParams.y  / (double)(sDisplayMetrics.heightPixels- mStatusBarHeight)));
         top = bottom - mRectHeight;
-        Log.e("@@@","top: "+top+ " bottom: "+bottom+" y "+mLineParams.y+ " s_H :"+mScreenHeight+" hPx: "+sDisplayMetrics.heightPixels+" rectH: "+mRectHeight);
         if (mLineStartChangeListener != null){
             mLineStartChangeListener.onChange(left,top,right,bottom);
         }
-
+        if (getAppInfo().getConnectionManager() != null){
+            getAppInfo().getConnectionManager().send(new ScreenRotationRequest(FLAG_SCREEN_ROTATION_1));
+        }
         if (getAppInfo().isStreamRunning()){
-            Log.e("@@","setScreen show");
             showOrHideScrollView(true);
         }
     }
@@ -157,10 +158,13 @@ public class WindowFloatManager {
         right = mScreenWidth;
         bottom = mScreenHeight;
         top = 0;
-        Log.e("@@@","top: "+top+ " bottom: "+bottom+" y "+mLineParams.y+ " s_H :"+mScreenHeight+" hPx: "+sDisplayMetrics.heightPixels+" rectH: "+mRectHeight);
         if (mLineStartChangeListener != null){
             mLineStartChangeListener.onChange(left,top,right,bottom);
         }
+        if (getAppInfo().getConnectionManager() != null){
+            getAppInfo().getConnectionManager().send(new ScreenRotationRequest(FLAG_SCREEN_ROTATION_0));
+        }
+
         showOrHideScrollView(false);
     }
 
@@ -213,7 +217,6 @@ public class WindowFloatManager {
                 right = mScreenWidth;
                 bottom = (int) (mScreenHeight * ((double)mLineParams.y  / (double)(sDisplayMetrics.heightPixels- mStatusBarHeight)));
                 top = bottom - mRectHeight;
-                Log.i("@@","top: "+top+ " bottom: "+bottom+" y "+mLineParams.y+ " s_H :"+mScreenHeight+" hPx: "+sDisplayMetrics.heightPixels+" rectH: "+mRectHeight);
                 if (mLineStartChangeListener != null){
                     mLineStartChangeListener.onChange(left,top,right,bottom);
                 }
@@ -238,7 +241,6 @@ public class WindowFloatManager {
         mSeekParams.height = sDisplayMetrics.heightPixels/5;
 
         isInit = true;
-        Log.e("@@","init show");
         if (isROTATION_0()){
             setScreen();
         }else {
@@ -270,7 +272,6 @@ public class WindowFloatManager {
     public void showOrHideScrollView(boolean isShow){
         if (isShow ){
             if (isROTATION_0()){
-                Log.e("@@","竖");
 
                 if (!isPort /*&& mLine!= null*/ && mSeekBar != null){
 //                    if (mLine.isAttachedToWindow()){
@@ -285,11 +286,9 @@ public class WindowFloatManager {
                 isPort = true;
             }else {
                 isPort = false;
-                Log.e("@@","横");
             }
         }else {
             if (/*mLine!= null &&*/ mSeekBar != null){
-                Log.e("@@","no show");
 //                if (mLine.isAttachedToWindow()){
 //
 //                    sWindowManager.removeView(mLine);
@@ -308,7 +307,7 @@ public class WindowFloatManager {
      */
     public boolean isROTATION_0(){
         int rotation = sWindowManager.getDefaultDisplay().getRotation();
-        Log.e("@@","rotation "+rotation);
+        Log.d(TAG,"rotation "+rotation);
         if (ROTATION_0 == rotation || ROTATION_180 == rotation)
             return true;
         else
@@ -355,8 +354,7 @@ public class WindowFloatManager {
         menuBuilder.setActionViewLongPressListener(actionView -> {
 //          if(!getAppInfo().isActivityRunning()){//判断是否已打开
             // 打开主页面
-//            Vibrator vibrator = (Vibrator) mContext.getSystemService(Context.VIBRATOR_SERVICE);
-//            vibrator.vibrate(100);
+//
 //            mContext.startActivity(new Intent(mContext, MainActivity.class)
 //                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
 //          }
@@ -388,18 +386,8 @@ public class WindowFloatManager {
     }
 
     private void setItemClickListener(SubActionButton[] subButtons) {
-        // 画板
-        subButtons[0].setOnClickListener(v-> {
-            mContext.startActivity(new Intent(mContext, WriteActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-
-        });
-        // 资源
-        subButtons[1].setOnClickListener(v-> {
-            mContext.startActivity(new Intent(mContext, ResActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
-
-        });
         // 投屏
-        subButtons[2].setOnClickListener(v-> {
+        subButtons[0].setOnClickListener(v-> {
             if (getAppInfo().isServerConnected()){
                 if (getAppInfo().isStreamRunning()){
                     // 如果正在投屏则停止
@@ -416,17 +404,20 @@ public class WindowFloatManager {
             }
         });
         // 演示
-        subButtons[3].setOnClickListener(v-> {
+        subButtons[1].setOnClickListener(v-> {
             ToastUtil.showToast("开发ing !");
         });
         // 广播
-        subButtons[4].setOnClickListener(v-> {
+        subButtons[2].setOnClickListener(v-> {
             ToastUtil.showToast("开发ing !");
 
         });
         // 设置
-        subButtons[5].setOnClickListener(v-> {
+        subButtons[3].setOnClickListener(v-> {
             mContext.startActivity(new Intent(mContext, SettingActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
+        });
+        subButtons[4].setOnClickListener(v -> {
+            getAppContext().AppExit();
         });
     }
 

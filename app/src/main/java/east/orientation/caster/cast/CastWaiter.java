@@ -128,6 +128,7 @@ public class CastWaiter {
 
     public void start(){
         synchronized (mLock){
+            if (mSearchThread != null) return;
             mSearchThread = new SearchThread();
             mSearchThread.start();
             Log.e("@@","waiter start");
@@ -136,12 +137,15 @@ public class CastWaiter {
 
     public void stop(){
         synchronized (mLock){
-            mSearchThread.interrupt();
             isSearching = false;
+
             try {
                 mMulticastSocket.leaveGroup(mSocketAddress,mNetworkInterface);
                 mMulticastSocket.close();
                 mMulticastSocket = null;
+                //
+                mSearchThread.interrupt();
+                mSearchThread = null;
             } catch (Exception e) {
                 e.printStackTrace();
             }

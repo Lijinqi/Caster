@@ -159,10 +159,10 @@ public class AACRecorder {
        1: 1 channel: front-center
        2: 2 channels: front-left, front-right
        3: 3 channels: front-center, front-left, front-right
-       4: 4 channels: front-center, front-left, front-right, back-center
-       5: 5 channels: front-center, front-left, front-right, back-left, back-right
-       6: 6 channels: front-center, front-left, front-right, back-left, back-right, LFE-channel
-       7: 8 channels: front-center, front-left, front-right, side-left, side-right, back-left, back-right, LFE-channel
+       4: 4 channels: front-center, front-left, front-right, left_back-center
+       5: 5 channels: front-center, front-left, front-right, left_back-left, left_back-right
+       6: 6 channels: front-center, front-left, front-right, left_back-left, left_back-right, LFE-channel
+       7: 8 channels: front-center, front-left, front-right, side-left, side-right, left_back-left, left_back-right, LFE-channel
        8-15: Reserved
        */
 

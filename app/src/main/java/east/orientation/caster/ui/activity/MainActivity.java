@@ -6,16 +6,14 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.PixelFormat;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.os.Handler;
-import android.support.constraint.ConstraintLayout;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
-import android.widget.ImageView;
 import android.widget.Toast;
 
 import com.xuhao.android.libsocket.sdk.ConnectionInfo;
@@ -167,6 +165,13 @@ public class MainActivity extends AppCompatActivity{
     };
 
     @Override
+    protected void onNewIntent(Intent intent) {
+        super.onNewIntent(intent);
+        //Log.e(TAG,"onNewIntent");
+        onBackPressed();
+    }
+
+    @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
         // 隐藏窗口
@@ -187,7 +192,7 @@ public class MainActivity extends AppCompatActivity{
         params.width =  0;
         params.height = 0 ;//此句用于自定义窗口大小，实现Activity窗口非全屏显示
         params.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
-                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE;
+                WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         this.getWindow().setAttributes(params);//params2用于设备整个Activity的窗口属性
     }
 
@@ -196,6 +201,7 @@ public class MainActivity extends AppCompatActivity{
      * 初始化
      */
     private void init() {
+        //connectToServer("192.168.0.199",10402);
         startSearchServer();
         registerReceiver(mReceiver,new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
     }
@@ -240,7 +246,6 @@ public class MainActivity extends AppCompatActivity{
      * @param ip
      */
     private void connectToServer(String ip,int port){
-            Log.e("@@","connect "+ip+" "+port);
             if (getAppInfo().getConnectionManager()!=null && getAppInfo().getConnectionManager().isConnect()) {
                 return;
             }
@@ -248,7 +253,7 @@ public class MainActivity extends AppCompatActivity{
             getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo));
             OkSocket.setBackgroundSurvivalTime(-1);
             if (getAppInfo().getConnectionManager() == null) {
-                Log.e(TAG,"ConnectionManager is null");
+
                 return;
             }
 
@@ -258,21 +263,20 @@ public class MainActivity extends AppCompatActivity{
                     .setWritePackageBytes(1024*1024)// 设置每个包的长度
                     .setHeaderProtocol(new NormalHeaderProtocol())// 设置自定义包头
                     .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
-                    .setPulseFrequency(3000)// 设置心跳间隔/毫秒
+                    .setPulseFrequency(2000)// 设置心跳间隔/毫秒
+                    .setPulseFeedLoseTimes(2)
                     .setReconnectionManager(new NoneReconnect())
                     //.setConnectionHolden(false)
                     .build();
             getAppInfo().getConnectionManager().option(mOkOptions);
             getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
             getAppInfo().getConnectionManager().registerReceiver(mSocketActionAdapter);
-            Log.e(TAG,"ConnectionManager set");
+
             synchronized (mLock){
                 if (!getAppInfo().getConnectionManager().isConnect()) {
-                    Log.e(TAG,"ConnectionManager connect");
                     getAppInfo().getConnectionManager().connect();
                 }
             }
-        Log.e("@@","end  connect "+ip+" "+port);
     }
 
     /**
@@ -331,7 +335,7 @@ public class MainActivity extends AppCompatActivity{
                     @Override
                     public void onChange(int left, int top, int right, int bottom) {
 
-                        Log.e(TAG,WindowFloatManager.getInstance().isROTATION_0()+" Change left "+left+" top "+top+" right "+right+" bottom "+bottom);
+                        //Log.d(TAG,WindowFloatManager.getInstance().isROTATION_0()+" Change left "+left+" top "+top+" right "+right+" bottom "+bottom);
                         // 发送选中区域
                         getAppInfo().getConnectionManager().send(new SelectRectResponse(left,top,right,bottom));
                     }
@@ -339,7 +343,7 @@ public class MainActivity extends AppCompatActivity{
                     @Override
                     public void onPrepare(int left, int top, int right, int bottom) {
                         // 发送选中区域
-                        Log.e(TAG,"Prepare  left "+left+" top "+top+" right "+right+" bottom "+bottom);
+                        //Log.d(TAG,"Prepare  left "+left+" top "+top+" right "+right+" bottom "+bottom);
                         getAppInfo().getConnectionManager().send(new SelectRectResponse(left,top,right,bottom));
                     }
                 });
@@ -357,12 +361,6 @@ public class MainActivity extends AppCompatActivity{
      */
     public void onBtnClick(View v) {
         switch (v.getId()){
-            case R.id.btn_draw:// 画板
-                startActivity(new Intent(this,WriteActivity.class));
-                break;
-            case R.id.btn_res:// 资源
-                startActivity(new Intent(this,ResActivity.class));
-                break;
             case R.id.btn_castToLarge:// 投到大屏幕
                 if (getAppInfo().isServerConnected()){
                     CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
@@ -393,8 +391,7 @@ public class MainActivity extends AppCompatActivity{
     @Override
     protected void onStart() {
         super.onStart();
-        Log.e(TAG,"MainActivity onStart");
-
+        Log.d(TAG,"MainActivity onStart");
         getAppInfo().setActivityRunning(true);
     }
 
@@ -451,6 +448,8 @@ public class MainActivity extends AppCompatActivity{
             case REQUEST_CODE_SCREEN_CAPTURE:
                 if (resultCode != RESULT_OK) {
                     ToastUtil.showToast("获取权限失败");
+                    //
+                    onBackPressed();
                     return;
                 }
                 mResultCode = resultCode;
@@ -461,7 +460,8 @@ public class MainActivity extends AppCompatActivity{
             default:
                 Log.e(TAG,"Unknown request code: " + requestCode);
         }
-
+        //
+        onBackPressed();
     }
 
     /**
@@ -485,11 +485,9 @@ public class MainActivity extends AppCompatActivity{
     @NeedsPermission({Manifest.permission.SYSTEM_ALERT_WINDOW})
     void showSystemWindow(){
         //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
-        Log.e(TAG,"showSystemWindow");
         WindowFloatManager.getInstance().showFloatMenus();
         // 回到Home界面
         onBackPressed();
-
     }
 
     @NeedsPermission({Manifest.permission.CHANGE_WIFI_MULTICAST_STATE,

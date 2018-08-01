@@ -20,6 +20,7 @@ import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
 import android.os.Parcelable;
+import android.os.PowerManager;
 import android.os.Process;
 import android.support.annotation.Nullable;
 import android.support.v4.app.NotificationCompat;
@@ -256,8 +257,7 @@ public class CastScreenService extends Service {
 //            }
 //        },100);
 
-        // 开启发送帧数据线程
-        CastFrameSender.start();
+
 
         EventBus.getDefault().register(this);
     }
@@ -282,6 +282,8 @@ public class CastScreenService extends Service {
      */
     private void serviceStartStreaming() {
         if (getAppInfo().isStreamRunning()) return;
+        // 开启发送帧数据线程
+        CastFrameSender.start();
         //
         WindowFloatManager.getInstance().showOrHideScrollView(true);
         // 请求分辨率
@@ -297,6 +299,8 @@ public class CastScreenService extends Service {
      */
     private void serviceStopStreaming() {
         if (!getAppInfo().isStreamRunning()) return;
+        // 关闭发送帧数据线程
+        CastFrameSender.stop();
         //stopForeground(true);
         // 发送关闭大屏请求
         Log.e(TAG,"发送关闭大屏请求");

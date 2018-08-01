@@ -6,11 +6,9 @@ import android.net.wifi.WifiManager;
 import com.xuhao.android.libsocket.sdk.connection.IConnectionManager;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
+import java.util.concurrent.LinkedBlockingQueue;
 
 import east.orientation.caster.cast.CastScreenService;
-import east.orientation.caster.sync.SyncService;
-
-import static east.orientation.caster.CastApplication.getAppInfo;
 
 
 /**
@@ -19,7 +17,7 @@ import static east.orientation.caster.CastApplication.getAppInfo;
 
 public class AppInfo {
     private CastScreenService mCastScreenService;
-    private SyncService mSyncService;
+
 
     private WifiManager mWifiManager;
     private WifiManager.MulticastLock mMulticastLock;
@@ -28,8 +26,8 @@ public class AppInfo {
     private volatile boolean isServerConnected;// 是否连接服务器
     private IConnectionManager mConnectionManager;// 连接tcp管理器
 
-    private ConcurrentLinkedDeque<byte[]> mScreenVideoStream = new ConcurrentLinkedDeque<>();
-    private ConcurrentLinkedDeque<byte[]> mAudioStream = new ConcurrentLinkedDeque<>();
+    private LinkedBlockingQueue<byte[]> mScreenVideoStream = new LinkedBlockingQueue<>();
+    private LinkedBlockingQueue<byte[]> mAudioStream = new LinkedBlockingQueue<>();
 
     public AppInfo(final Context context) {
         mWifiManager = (WifiManager) context.getApplicationContext().getSystemService(Context.WIFI_SERVICE);
@@ -43,14 +41,6 @@ public class AppInfo {
 
     public void setCastScreenService(CastScreenService castScreenService) {
         mCastScreenService = castScreenService;
-    }
-
-    public SyncService getSyncService() {
-        return mSyncService;
-    }
-
-    public void setSyncService(SyncService syncService) {
-        mSyncService = syncService;
     }
 
     public WifiManager getWifiManager() {
@@ -69,11 +59,11 @@ public class AppInfo {
         mConnectionManager = connectionManager;
     }
 
-    public ConcurrentLinkedDeque<byte[]> getScreenVideoStream() {
+    public LinkedBlockingQueue<byte[]> getScreenVideoStream() {
         return mScreenVideoStream;
     }
 
-    public ConcurrentLinkedDeque<byte[]> getAudioStream() {
+    public LinkedBlockingQueue<byte[]> getAudioStream() {
         return mAudioStream;
     }
 

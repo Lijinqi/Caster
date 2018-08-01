@@ -4,8 +4,11 @@ import android.content.Context;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.util.Log;
+import android.util.TypedValue;
 
 import java.util.Arrays;
+
+import east.orientation.caster.CastApplication;
 
 /**
  * Created by ljq on 2018/5/2.
@@ -50,5 +53,9 @@ public class CommonUtil {
         }
 
         return false;
+    }
+
+    public static float dp2px(float dpValue) {
+        return TypedValue.applyDimension(TypedValue.COMPLEX_UNIT_DIP, dpValue, CastApplication.getAppContext().getResources().getDisplayMetrics());
     }
 }

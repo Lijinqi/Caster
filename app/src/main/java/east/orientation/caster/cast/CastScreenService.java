@@ -89,6 +89,9 @@ public class CastScreenService extends Service {
 
     private NotificationManager mNotificationManager;
 
+    private PowerManager mPowerManager;
+    private PowerManager.WakeLock mWakeLock;
+
     @Nullable
     @Override
     public IBinder onBind(Intent intent) {
@@ -248,18 +251,18 @@ public class CastScreenService extends Service {
         };
         registerReceiver(mBroadcastReceiver, screenOnOffAndWiFiFilter);
 
-//        // 显示悬浮框
-//        mHandler.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
-//                WindowFloatManager.getInstance().showFloatMenus();
-//            }
-//        },100);
-
-
-
         EventBus.getDefault().register(this);
+
+    }
+
+    private void keepScreenOn(){
+        mPowerManager = (PowerManager) this
+                .getSystemService(Context.POWER_SERVICE);
+        mWakeLock = mPowerManager.newWakeLock(
+                PowerManager.FULL_WAKE_LOCK, "My Lock");
+
+        //保持常亮
+        mWakeLock.acquire();
     }
 
     public static Intent getStartIntent(Context context) {
@@ -282,8 +285,11 @@ public class CastScreenService extends Service {
      */
     private void serviceStartStreaming() {
         if (getAppInfo().isStreamRunning()) return;
+        // 屏幕常亮
+        keepScreenOn();
         // 开启发送帧数据线程
         CastFrameSender.start();
+        CastAudioSender.start();
         //
         WindowFloatManager.getInstance().showOrHideScrollView(true);
         // 请求分辨率
@@ -301,6 +307,7 @@ public class CastScreenService extends Service {
         if (!getAppInfo().isStreamRunning()) return;
         // 关闭发送帧数据线程
         CastFrameSender.stop();
+        CastAudioSender.stop();
         //stopForeground(true);
         // 发送关闭大屏请求
         Log.e(TAG,"发送关闭大屏请求");
@@ -315,6 +322,8 @@ public class CastScreenService extends Service {
         }
         getAppInfo().getScreenVideoStream().clear();
         getAppInfo().getAudioStream().clear();
+
+        mWakeLock.release();
     }
 
 
@@ -367,17 +376,17 @@ public class CastScreenService extends Service {
                 RemoteViews smallView_start = new RemoteViews(getPackageName(), R.layout.start_notification_small);
                 smallView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationSmall, pendingIntent);
                 smallView_start.setImageViewResource(R.id.imageViewStartNotificationSmallIconMain, R.mipmap.app_launcher);
-                smallView_start.setImageViewResource(R.id.imageViewStartNotificationSmallIconStart, R.drawable.ic_service_start_24dp);
-                smallView_start.setOnClickPendingIntent(R.id.imageViewStartNotificationSmallIconStart, startIntent);
+                //smallView_start.setImageViewResource(R.id.imageViewStartNotificationSmallIconStart, R.drawable.ic_service_start_24dp);
+                //smallView_start.setOnClickPendingIntent(R.id.imageViewStartNotificationSmallIconStart, startIntent);
                 builder.setCustomContentView(smallView_start);
 
                 RemoteViews bigView_start = new RemoteViews(getPackageName(), R.layout.start_notification_big);
                 bigView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationBig, pendingIntent);
                 bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconMain, R.mipmap.app_launcher);
-                bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconStart, R.drawable.ic_service_start_24dp);
-                bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconExit, R.drawable.ic_service_exit_24dp);
-                bigView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationBigStart, startIntent);
-                bigView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationBigExit, exitIntent);
+                //bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconStart, R.drawable.ic_service_start_24dp);
+                //bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconExit, R.drawable.ic_service_exit_24dp);
+                //bigView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationBigStart, startIntent);
+                //bigView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationBigExit, exitIntent);
                 builder.setCustomBigContentView(bigView_start);
                 break;
 
@@ -389,15 +398,15 @@ public class CastScreenService extends Service {
                 RemoteViews smallView_stop = new RemoteViews(getPackageName(), R.layout.stop_notification_small);
                 smallView_stop.setOnClickPendingIntent(R.id.linearLayoutStopNotificationSmall, pendingIntent);
                 smallView_stop.setImageViewResource(R.id.imageViewStopNotificationSmallIconMain, R.mipmap.app_launcher);
-                smallView_stop.setImageViewResource(R.id.imageViewStopNotificationSmallIconStop, R.drawable.ic_service_stop_24dp);
-                smallView_stop.setOnClickPendingIntent(R.id.imageViewStopNotificationSmallIconStop, stopIntent);
+                //smallView_stop.setImageViewResource(R.id.imageViewStopNotificationSmallIconStop, R.drawable.ic_service_stop_24dp);
+                //smallView_stop.setOnClickPendingIntent(R.id.imageViewStopNotificationSmallIconStop, stopIntent);
                 builder.setCustomContentView(smallView_stop);
 
                 RemoteViews bigView_stop = new RemoteViews(getPackageName(), R.layout.stop_notification_big);
                 bigView_stop.setOnClickPendingIntent(R.id.linearLayoutStopNotificationBig, pendingIntent);
                 bigView_stop.setImageViewResource(R.id.imageViewStopNotificationBigIconMain, R.mipmap.app_launcher);
-                bigView_stop.setImageViewResource(R.id.imageViewStopNotificationBigIconStop, R.drawable.ic_service_stop_24dp);
-                bigView_stop.setOnClickPendingIntent(R.id.linearLayoutStopNotificationBigStop, stopIntent);
+                //bigView_stop.setImageViewResource(R.id.imageViewStopNotificationBigIconStop, R.drawable.ic_service_stop_24dp);
+                //bigView_stop.setOnClickPendingIntent(R.id.linearLayoutStopNotificationBigStop, stopIntent);
                 builder.setCustomBigContentView(bigView_stop);
                 break;
 

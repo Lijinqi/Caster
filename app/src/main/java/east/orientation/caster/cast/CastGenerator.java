@@ -19,7 +19,7 @@ public class CastGenerator {
     public CastGenerator(){
         mScreenRecorder = new ScreenRecorder();
         //mAACRecorder = new AACRecorder();
-        //mMP3Recorder = new MP3Recorder();
+        mMP3Recorder = new MP3Recorder();
     }
 
     /**
@@ -30,7 +30,7 @@ public class CastGenerator {
         // aac 编码录音
         //mAACRecorder.start();
         // mp3 编码录音
-        //mMP3Recorder.start();
+        mMP3Recorder.start();
     }
 
     /**
@@ -40,6 +40,6 @@ public class CastGenerator {
     public void stop() {
         mScreenRecorder.stop();
         //mAACRecorder.stop();
-        //mMP3Recorder.stop();
+        mMP3Recorder.stop();
     }
 }

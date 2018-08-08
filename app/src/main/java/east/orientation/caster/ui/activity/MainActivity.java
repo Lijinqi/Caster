@@ -493,8 +493,8 @@ public class MainActivity extends AppCompatActivity{
     @NeedsPermission({Manifest.permission.CHANGE_WIFI_MULTICAST_STATE,
             Manifest.permission.WRITE_EXTERNAL_STORAGE,
             Manifest.permission.READ_EXTERNAL_STORAGE,
-            /*Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.CAPTURE_AUDIO_OUTPUT*/})
+            Manifest.permission.RECORD_AUDIO,
+            Manifest.permission.CAPTURE_AUDIO_OUTPUT})
     void getRuntimePermission(){
 
     }

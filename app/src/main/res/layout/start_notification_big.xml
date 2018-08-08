@@ -3,7 +3,7 @@
     xmlns:app="http://schemas.android.com/apk/res-auto"
     android:id="@+id/linearLayoutStartNotificationBig"
     android:layout_width="match_parent"
-    android:layout_height="96dp"
+    android:layout_height="56dp"
     android:background="@color/colorPrimary"
     android:gravity="center_vertical"
     android:orientation="vertical"
@@ -13,7 +13,7 @@
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:paddingTop="4dp">
+        >
 
         <ImageView
             android:id="@+id/imageViewStartNotificationBigIconMain"
@@ -36,17 +36,17 @@
                 android:textColor="#FFF"
                 android:textStyle="bold" />
 
-            <TextView
+            <!--<TextView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:paddingStart="8dp"
                 android:text="@string/service_press_start"
                 android:textAppearance="?android:attr/textAppearanceSmall"
-                android:textColor="#FFF" />
+                android:textColor="#FFF" />-->
         </LinearLayout>
     </LinearLayout>
 
-    <LinearLayout
+    <!--<LinearLayout
         android:layout_width="match_parent"
         android:layout_height="match_parent"
         android:baselineAligned="false"
@@ -112,5 +112,5 @@
                 android:layout_height="24dp"
                 app:srcCompat="@drawable/ic_service_exit_24dp" />
         </LinearLayout>
-    </LinearLayout>
+    </LinearLayout>-->
 </LinearLayout>

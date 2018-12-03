@@ -6,7 +6,7 @@ import android.media.MediaFormat;
 
 /**
  * Created by ljq on 2018/3/28.
- *
+ * <p>
  * audio codec 相关配置常量
  */
 
@@ -18,10 +18,10 @@ public class AudioConfig {
     public static final String DEFAULT_MIME = MediaFormat.MIMETYPE_AUDIO_AAC;
     public static final int DEFAULT_AUDIO_ENCODING = AudioFormat.ENCODING_PCM_16BIT;
     public static final int DEFAULT_AAC_PROFILE = MediaCodecInfo.CodecProfileLevel.AACObjectLC;
-    public static final int DEFAULT_CHANNEL_COUNT = 1;
+    public static final int DEFAULT_CHANNEL_COUNT = 3;
     //======================Lame Default Settings=====================
 
-    public static final int DEFAULT_LAME_MP3_QUALITY = 2;
+    public static final int DEFAULT_LAME_MP3_QUALITY = 5;
 
     public static final int DEFAULT_MP3_SIMPLE_FORMAT = 6;
 

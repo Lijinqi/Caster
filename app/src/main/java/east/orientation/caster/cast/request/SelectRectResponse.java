@@ -1,21 +1,21 @@
 package east.orientation.caster.cast.request;
 
-import com.xuhao.android.libsocket.utils.BytesUtils;
 
 import java.nio.ByteBuffer;
 
 import east.orientation.caster.local.Common;
+import east.orientation.caster.util.BytesUtils;
 
 /**
  * Created by ljq on 2018/4/16.
- *
+ * <p>
  * 告知大屏选中区域
  */
 
 public class SelectRectResponse extends BaseRequest {
-    int left,top,right,bottom;
+    int left, top, right, bottom;
 
-    public SelectRectResponse(int left,int top,int right,int bottom){
+    public SelectRectResponse(int left, int top, int right, int bottom) {
         this.left = left;
         this.top = top;
         this.right = right;

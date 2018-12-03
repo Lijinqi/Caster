@@ -4,17 +4,17 @@ import east.orientation.caster.local.Common;
 
 /**
  * Created by ljq on 2018/3/12.
- *
+ * <p>
  * 投屏图像帧数据
- *
+ * <p>
  * data:录屏流中的某帧数据
  */
 
 public class VideoCastRequest extends BaseRequest {
 
-    private byte[] frame ;
+    private byte[] frame;
 
-    public VideoCastRequest(byte[] frame){
+    public VideoCastRequest(byte[] frame) {
         this.frame = frame;
     }
 

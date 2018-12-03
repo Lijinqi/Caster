@@ -7,7 +7,8 @@ package east.orientation.caster.evevtbus;
 public class ConnectMessage {
     private String ip;
     private int port;
-    public ConnectMessage(String ip,int port){
+
+    public ConnectMessage(String ip, int port) {
         this.ip = ip;
         this.port = port;
     }

@@ -36,11 +36,11 @@ public class SyncFileBean {
 
     public String getTime() {
 
-        DateFormat simpleDateFormat =  SimpleDateFormat.getDateTimeInstance();//new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+        DateFormat simpleDateFormat = SimpleDateFormat.getDateTimeInstance();//new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
 
         long lt = Long.valueOf(time);
 
-        Date date = new Date(lt*1000);
+        Date date = new Date(lt * 1000);
         return simpleDateFormat.format(date);
 
     }

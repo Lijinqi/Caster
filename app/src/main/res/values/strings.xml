@@ -1,5 +1,5 @@
 <resources xmlns:android="http://schemas.android.com/tools">
-    <string name="app_name">东向投屏</string>
+    <string name="app_name">投影互动</string>
     <string name="action_settings">Settings</string>
     <string name="hello_world">Hello world!</string>
 
@@ -20,6 +20,7 @@
     <string name="setting_screen_size">分辨率</string>
     <string name="setting_bitrate">比特率</string>
     <string name="setting_fps">帧率</string>
+    <string name="setting_cast_mode">投屏模式</string>
 
     <!--录屏-->
     <string name="service_ready_to_stream">录屏准备就绪</string>

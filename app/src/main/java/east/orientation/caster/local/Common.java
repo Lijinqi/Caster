@@ -8,12 +8,15 @@ import java.io.File;
  * Created by ljq on 2018/3/8.
  */
 
-public class Common  {
+public class Common {
+    public static final String APP_KEY = "Caster";
+    // TODO TEST
+    public static int count = 0;
     /**********************************************************/
     /**手写板相关常量**/
     /**********************************************************/
     public static final String SAVE_DIR_NAME = "Caster";
-    public static final String DEFAULT_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator+Common.SAVE_DIR_NAME;
+    public static final String DEFAULT_DIR = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS) + File.separator + Common.SAVE_DIR_NAME;
 
 
     /**********************************************************/
@@ -44,6 +47,7 @@ public class Common  {
     public static final int FLAG_SCREEN_LARGE_SIZE_RESPONSE = 0x2010;//大屏回复  携带分辨率
     public static final int FLAG_SCREEN_CUT_SIZE_RESPONSE = 0x2011;//回复大屏  Rect坐标
     public static final int FLAG_SCREEN_ROTATION = 0x2012;//屏幕横竖参数
+    public static final int FLAG_SCREEN_CAST_MODEL = 0x2014;//投屏模式 0，普通模式 1， 放大模式
 
     public static final int FLAG_SCREEN_ROTATION_1 = 1;
     public static final int FLAG_SCREEN_ROTATION_0 = 0;
@@ -64,8 +68,8 @@ public class Common  {
     public static final String ACTION_STOP_STREAM = "ACTION_STOP_STREAM";
     public static final String ACTION_EXIT = "ACTION_EXIT";
 
-
-
+    public static final int CAST_MODE_MIRACAST = 0;
+    public static final int CAST_MODE_WIFI = 1;
 
     /**********************************************************/
     /**SharePreference存储相关常量**/
@@ -76,5 +80,8 @@ public class Common  {
     public static final String KEY_SIZE = "key_size";
     public static final String KEY_BITRATE = "key_bitrate";
     public static final String KEY_FPS = "key_fps";
+    public static final String KEY_CAST_MODE = "key_cast_mode";
+
+
 
 }

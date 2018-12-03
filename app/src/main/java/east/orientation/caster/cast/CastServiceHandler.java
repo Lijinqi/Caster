@@ -30,19 +30,19 @@ public class CastServiceHandler extends Handler {
     //private boolean mCurrentOrientation;
     private final CastGenerator mCastGenerator;
 
-    public CastServiceHandler(Looper looper){
+    public CastServiceHandler(Looper looper) {
         super(looper);
         mCastGenerator = new CastGenerator();
     }
 
     @Override
     public void handleMessage(Message msg) {
-        switch (msg.what){
+        switch (msg.what) {
             case HANDLER_START_STREAMING:
                 if (getAppInfo().isStreamRunning()) break;
                 mCastGenerator.start();
                 getAppInfo().setStreamRunning(true);
-                Log.e(TAG,"set is Running");
+                Log.e(TAG, "set is Running");
                 break;
             case HANDLER_PAUSE_STREAMING:
                 if (!getAppInfo().isStreamRunning()) break;
@@ -74,7 +74,7 @@ public class CastServiceHandler extends Handler {
 //                }
 //                break;
             default:
-                Log.e(TAG,"Cannot handle message");
+                Log.e(TAG, "Cannot handle message");
         }
     }
 

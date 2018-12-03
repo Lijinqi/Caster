@@ -30,7 +30,6 @@ import android.widget.RemoteViews;
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 
-import east.orientation.caster.CastApplication;
 import east.orientation.caster.R;
 
 import east.orientation.caster.cast.request.SelectRectRequest;
@@ -45,7 +44,7 @@ import east.orientation.caster.view.WindowFloatManager;
 import static android.content.Intent.ACTION_SCREEN_OFF;
 import static android.net.wifi.WifiManager.NETWORK_STATE_CHANGED_ACTION;
 import static android.net.wifi.WifiManager.WIFI_STATE_CHANGED_ACTION;
-import static com.xuhao.android.libsocket.sdk.OkSocket.open;
+
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_START;
@@ -59,7 +58,6 @@ import static east.orientation.caster.local.Common.NOTIFICATION_STOP_STREAMING;
 
 /**
  * Created by ljq on 2018/1/9.
- *
  * 投屏服务
  */
 public class CastScreenService extends Service {
@@ -154,8 +152,8 @@ public class CastScreenService extends Service {
                                 EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
                             }
                             Log.d(TAG, "start stream");
-                        }else {
-                            ToastUtil.showToast( "未连接服务器,请连接服务器！");
+                        } else {
+                            ToastUtil.showToast("未连接服务器,请连接服务器！");
                         }
 
                         break;
@@ -182,37 +180,37 @@ public class CastScreenService extends Service {
             @Override
             public void onReceive(Context context, Intent intent) {
                 final String action = intent.getAction();
-                switch (action){
+                switch (action) {
                     case ACTION_SCREEN_OFF:
                         serviceStopStreaming();
                         break;
                     case WIFI_STATE_CHANGED_ACTION:
                         //获取当前的wifi状态int类型数据
                         int mWifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, 0);
-                        switch (mWifiState ) {
+                        switch (mWifiState) {
                             case WifiManager.WIFI_STATE_ENABLED:
                                 //已打开
-                                Log.e(TAG,"已打开");
+                                Log.e(TAG, "已打开");
                                 break;
                             case WifiManager.WIFI_STATE_ENABLING:
                                 //打开中
-                                Log.e(TAG,"打开中");
-                                if (getAppInfo().getConnectionManager() != null ){
+                                Log.e(TAG, "打开中");
+                                if (getAppInfo().getConnectionManager() != null) {
                                     getAppInfo().getConnectionManager().connect();
                                 }
                                 break;
                             case WifiManager.WIFI_STATE_DISABLED:
                                 //已关闭
-                                Log.e(TAG,"已关闭");
+                                Log.e(TAG, "已关闭");
                                 ToastUtil.showToast("WIFI未连接！");
-                                if (getAppInfo().isStreamRunning()){
+                                if (getAppInfo().isStreamRunning()) {
                                     serviceStopStreaming();
                                 }
                                 break;
                             case WifiManager.WIFI_STATE_DISABLING:
-                                Log.e(TAG,"关闭中");
+                                Log.e(TAG, "关闭中");
                                 //关闭中
-                                if (getAppInfo().getConnectionManager() != null ){
+                                if (getAppInfo().getConnectionManager() != null) {
                                     getAppInfo().getConnectionManager().disconnect();
                                 }
                                 break;
@@ -228,16 +226,16 @@ public class CastScreenService extends Service {
                         Parcelable parcelableExtra = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
                         WifiInfo wifiInfo = intent.getParcelableExtra(WifiManager.EXTRA_WIFI_INFO);
                         String bssid = intent.getStringExtra(WifiManager.EXTRA_BSSID);
-                        if (null != parcelableExtra ) {
+                        if (null != parcelableExtra) {
                             NetworkInfo networkInfo = (NetworkInfo) parcelableExtra;
                             NetworkInfo.State state = networkInfo.getState();
 
-                            if(state==NetworkInfo.State.DISCONNECTED){
-                                if (getAppInfo().getConnectionManager()!=null &&getAppInfo().getConnectionManager().isConnect() && !getAppInfo().getConnectionManager().isDisconnecting()){
+                            if (state == NetworkInfo.State.DISCONNECTED) {
+                                if (getAppInfo().getConnectionManager() != null && getAppInfo().getConnectionManager().isConnect() && !getAppInfo().getConnectionManager().isDisconnecting()) {
                                     getAppInfo().getConnectionManager().disconnect();
-                                    Log.e(TAG,"disconnect--");
+                                    Log.e(TAG, "disconnect--");
                                 }
-                            }else if(state== NetworkInfo.State.CONNECTED){
+                            } else if (state == NetworkInfo.State.CONNECTED) {
 //                                if (getAppInfo().getConnectionManager()!=null && !getAppInfo().getConnectionManager().isConnect()){
 //                                    getAppInfo().getConnectionManager().connect();
 //                                    Log.e(TAG,"connect--");
@@ -255,12 +253,12 @@ public class CastScreenService extends Service {
 
     }
 
-    private void keepScreenOn(){
+    private void keepScreenOn() {
         mPowerManager = (PowerManager) this
                 .getSystemService(Context.POWER_SERVICE);
         mWakeLock = mPowerManager.newWakeLock(
                 PowerManager.FULL_WAKE_LOCK, "My Lock");
-
+        mWakeLock.setReferenceCounted(false);
         //保持常亮
         mWakeLock.acquire();
     }
@@ -310,7 +308,7 @@ public class CastScreenService extends Service {
         CastAudioSender.stop();
         //stopForeground(true);
         // 发送关闭大屏请求
-        Log.e(TAG,"发送关闭大屏请求");
+        Log.e(TAG, "发送关闭大屏请求");
         getAppInfo().getConnectionManager().send(new StopCastRequest());
         //
         WindowFloatManager.getInstance().showOrHideScrollView(false);
@@ -358,7 +356,7 @@ public class CastScreenService extends Service {
         builder.setVisibility(NotificationCompat.VISIBILITY_PUBLIC);
         builder.setCategory(Notification.CATEGORY_SERVICE);
         builder.setPriority(NotificationCompat.PRIORITY_MAX);
-        builder.setSmallIcon(R.mipmap.app_launcher);
+        builder.setSmallIcon(R.mipmap.app_icon);
         builder.setWhen(0);
 
         switch (notificationType) {
@@ -375,14 +373,14 @@ public class CastScreenService extends Service {
 
                 RemoteViews smallView_start = new RemoteViews(getPackageName(), R.layout.start_notification_small);
                 smallView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationSmall, pendingIntent);
-                smallView_start.setImageViewResource(R.id.imageViewStartNotificationSmallIconMain, R.mipmap.app_launcher);
+                smallView_start.setImageViewResource(R.id.imageViewStartNotificationSmallIconMain, R.mipmap.app_icon);
                 //smallView_start.setImageViewResource(R.id.imageViewStartNotificationSmallIconStart, R.drawable.ic_service_start_24dp);
                 //smallView_start.setOnClickPendingIntent(R.id.imageViewStartNotificationSmallIconStart, startIntent);
                 builder.setCustomContentView(smallView_start);
 
                 RemoteViews bigView_start = new RemoteViews(getPackageName(), R.layout.start_notification_big);
                 bigView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationBig, pendingIntent);
-                bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconMain, R.mipmap.app_launcher);
+                bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconMain, R.mipmap.app_icon);
                 //bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconStart, R.drawable.ic_service_start_24dp);
                 //bigView_start.setImageViewResource(R.id.imageViewStartNotificationBigIconExit, R.drawable.ic_service_exit_24dp);
                 //bigView_start.setOnClickPendingIntent(R.id.linearLayoutStartNotificationBigStart, startIntent);
@@ -397,14 +395,14 @@ public class CastScreenService extends Service {
 
                 RemoteViews smallView_stop = new RemoteViews(getPackageName(), R.layout.stop_notification_small);
                 smallView_stop.setOnClickPendingIntent(R.id.linearLayoutStopNotificationSmall, pendingIntent);
-                smallView_stop.setImageViewResource(R.id.imageViewStopNotificationSmallIconMain, R.mipmap.app_launcher);
+                smallView_stop.setImageViewResource(R.id.imageViewStopNotificationSmallIconMain, R.mipmap.app_icon);
                 //smallView_stop.setImageViewResource(R.id.imageViewStopNotificationSmallIconStop, R.drawable.ic_service_stop_24dp);
                 //smallView_stop.setOnClickPendingIntent(R.id.imageViewStopNotificationSmallIconStop, stopIntent);
                 builder.setCustomContentView(smallView_stop);
 
                 RemoteViews bigView_stop = new RemoteViews(getPackageName(), R.layout.stop_notification_big);
                 bigView_stop.setOnClickPendingIntent(R.id.linearLayoutStopNotificationBig, pendingIntent);
-                bigView_stop.setImageViewResource(R.id.imageViewStopNotificationBigIconMain, R.mipmap.app_launcher);
+                bigView_stop.setImageViewResource(R.id.imageViewStopNotificationBigIconMain, R.mipmap.app_icon);
                 //bigView_stop.setImageViewResource(R.id.imageViewStopNotificationBigIconStop, R.drawable.ic_service_stop_24dp);
                 //bigView_stop.setOnClickPendingIntent(R.id.linearLayoutStopNotificationBigStop, stopIntent);
                 builder.setCustomBigContentView(bigView_stop);
@@ -455,7 +453,7 @@ public class CastScreenService extends Service {
 
         CastFrameSender.stop();
 
-        if (getAppInfo().getConnectionManager() != null){
+        if (getAppInfo().getConnectionManager() != null) {
             getAppInfo().getConnectionManager().disconnect();
         }
 

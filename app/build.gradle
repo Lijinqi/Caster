@@ -6,8 +6,8 @@ android {
         applicationId "east.orientation.caster"
         minSdkVersion 21
         targetSdkVersion 27
-        versionCode 2
-        versionName "1.0.2"
+        versionCode 4
+        versionName "1.0.4"
         testInstrumentationRunner "android.support.test.runner.AndroidJUnitRunner"
 
         javaCompileOptions {
@@ -18,13 +18,15 @@ android {
 
         multiDexEnabled true
     }
-
+    // 需设置为系统应用 则用该签名文件
     signingConfigs {
         release {
             storeFile file("E:/Lijinqi/KEY_TOOL/sys/Doom.jks")
             storePassword '123456'
             keyAlias 'Doom'
             keyPassword '123456'
+            v1SigningEnabled true
+            v2SigningEnabled true
         }
 
         debug {
@@ -37,20 +39,20 @@ android {
 
     buildTypes {
         debug {
-            buildConfigField "Boolean", "DEBUG_MODE", "true"
+            buildConfigField "Boolean", "LOG", "true"
             minifyEnabled false   // 运行混淆
             shrinkResources false // 打包忽略无用资源文件
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            signingConfig signingConfigs.debug
         }
         release {
-            buildConfigField "Boolean", "DEBUG_MODE", "false"
+            buildConfigField "Boolean", "LOG", "false"
             minifyEnabled true
             shrinkResources true
+            signingConfig signingConfigs.release
             proguardFiles getDefaultProguardFile('proguard-android.txt'), 'proguard-rules.pro'
-//            signingConfig signingConfigs.release
         }
     }
+
     compileOptions {
         sourceCompatibility JavaVersion.VERSION_1_8
         targetCompatibility JavaVersion.VERSION_1_8
@@ -64,13 +66,37 @@ android {
         cruncherEnabled = false
     }
 
+    //解决编译release版时内存溢出
     dexOptions {
-        jumboMode true
         javaMaxHeapSize "4g"
+        preDexLibraries = false
+    }
+
+    //打包后应用名称
+    applicationVariants.all { variant ->
+        variant.outputs.all { output ->
+            def outputFile = output.outputFile
+            def fileName
+            if (outputFile != null && outputFile.name.endsWith('.apk')) {
+                if (variant.buildType.name.equalsIgnoreCase('release')) {
+                    fileName = "Caster_v${defaultConfig.versionName}.apk"
+                } else if (variant.buildType.name.equalsIgnoreCase('debug')) {
+                    fileName = "Caster_v${defaultConfig.versionName}_debug.apk"
+                }
+                outputFileName = fileName
+            }
+        }
     }
 }
 
+def getLayoutLibPath() {
+//    return "${android.getSdkDirectory().getAbsolutePath()}" + "/platforms/" +
+//            android.compileSdkVersion +"/data/layoutlib.jar"
+    return "${android.getSdkDirectory().getAbsolutePath()}" + "/platforms/android-25/data/layoutlib.jar"
+}
+
 dependencies {
+    //provided files(getLayoutLibPath())
     compile fileTree(include: ['*.jar'], dir: 'libs')
     compile 'com.android.support:appcompat-v7:27.1.1'
     compile 'com.android.support:design:27.1.1'
@@ -89,12 +115,13 @@ dependencies {
     compile 'org.greenrobot:eventbus:3.1.0'
     annotationProcessor 'org.greenrobot:eventbus-annotation-processor:3.1.0'
     // socket
-    compile 'com.tonystark.android:socket:2.0.3'
+    compile 'com.tonystark.android:socket:4.1.0'
     compile 'com.tonystark.android:lib_framework:1.0.0'
     // 依赖下面的库
     compile 'com.android.support:cardview-v7:27.1.1'
     // CircleImageView
     compile 'de.hdodenhof:circleimageview:2.2.0'
     compile project(path: ':lamelibrary')
+
 }
 

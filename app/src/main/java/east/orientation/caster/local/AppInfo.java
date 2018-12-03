@@ -3,7 +3,8 @@ package east.orientation.caster.local;
 import android.content.Context;
 import android.net.wifi.WifiManager;
 
-import com.xuhao.android.libsocket.sdk.connection.IConnectionManager;
+
+import com.xuhao.didi.socket.client.sdk.client.connection.IConnectionManager;
 
 import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;

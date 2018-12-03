@@ -24,6 +24,7 @@ import org.greenrobot.eventbus.EventBus;
 import java.lang.reflect.Method;
 
 import east.orientation.caster.R;
+import east.orientation.caster.cast.request.ChageModelRequest;
 import east.orientation.caster.cast.request.ScreenRotationRequest;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
@@ -40,7 +41,6 @@ import static android.view.WindowManager.LayoutParams.TYPE_PHONE;
 import static android.view.WindowManager.LayoutParams.TYPE_SYSTEM_ALERT;
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
-import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_STOP;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_TRY_START;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK;
 import static east.orientation.caster.local.Common.FLAG_SCREEN_ROTATION_0;
@@ -53,11 +53,28 @@ import static east.orientation.caster.local.Common.FLAG_SCREEN_ROTATION_1;
 
 public class WindowFloatManager {
     private static final String TAG = "WindowFloatManager";
+
+    enum CastModel {
+        Normal(0),
+        Large(1);
+
+        int value;
+
+        CastModel(int value) {
+            this.value = value;
+        }
+
+        public int getValue() {
+            return value;
+        }
+    }
+
+    private CastModel mCastModel = CastModel.Normal;
     private static WindowManager sWindowManager;
     private static DisplayMetrics sDisplayMetrics;
     private static Context mContext;
 
-    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_cast_large,R.mipmap.ic_stu_screen,R.mipmap.ic_cast_all,R.mipmap.ic_setting,R.mipmap.ic_exit};
+    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_cast_large, R.mipmap.ic_stu_screen, R.mipmap.ic_cast_all, R.mipmap.ic_setting, R.mipmap.ic_exit};
     private int[] mIconsId;
 
     private double px;// 大屏 H / W
@@ -76,7 +93,7 @@ public class WindowFloatManager {
     private PureVerticalSeekBar mSeekBar;
     private WindowManager.LayoutParams mSeekParams;
 
-    private WindowFloatManager(Context context){
+    private WindowFloatManager(Context context) {
         mContext = context;
         sWindowManager = (WindowManager) mContext.getSystemService(Context.WINDOW_SERVICE);
         sDisplayMetrics = new DisplayMetrics();
@@ -103,8 +120,8 @@ public class WindowFloatManager {
         return sWindowManager;
     }
 
-    public static DisplayMetrics getDisplayMetrics(){
-        if (sDisplayMetrics == null){
+    public static DisplayMetrics getDisplayMetrics() {
+        if (sDisplayMetrics == null) {
             sDisplayMetrics = new DisplayMetrics();
             sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
         }
@@ -114,61 +131,61 @@ public class WindowFloatManager {
     /**
      * 设置图标资源
      */
-    public void setResource(int[] iconsId){
-        if (iconsId != null && iconsId.length>0)
+    public void setResource(int[] iconsId) {
+        if (iconsId != null && iconsId.length > 0)
             mIconsId = iconsId;
     }
 
-    public void setLineStartChangeListener(LineStartChangeListener listener){
+    public void setLineStartChangeListener(LineStartChangeListener listener) {
         mLineStartChangeListener = listener;
     }
 
-    public void setScreen(){
+    public void setScreen() {
         if (!isInit) return;
         sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
-        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
+        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE, 0);
         mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
         mScreenHeight = VideoConfig.RESOLUTION_OPTIONS[1][indexSize];
         mRectHeight = (int) (mScreenWidth * px);// 根据录屏分辨率算
         // 更改大屏实际播放分辨率
-        int left,top,right,bottom;
+        int left, top, right, bottom;
         left = 0;
         right = mScreenWidth;
-        bottom = (int) (mScreenHeight * ((double)mLineParams.y  / (double)(sDisplayMetrics.heightPixels- mStatusBarHeight)));
+        bottom = (int) (mScreenHeight * ((double) mLineParams.y / (double) (sDisplayMetrics.heightPixels - mStatusBarHeight)));
         top = bottom - mRectHeight;
-        if (mLineStartChangeListener != null){
-            mLineStartChangeListener.onChange(left,top,right,bottom);
+        if (mLineStartChangeListener != null) {
+            mLineStartChangeListener.onChange(left, top, right, bottom);
         }
-        if (getAppInfo().getConnectionManager() != null){
+        if (getAppInfo().getConnectionManager() != null) {
             getAppInfo().getConnectionManager().send(new ScreenRotationRequest(FLAG_SCREEN_ROTATION_1));
         }
-        if (getAppInfo().isStreamRunning()){
+        if (getAppInfo().isStreamRunning()) {
             showOrHideScrollView(true);
         }
     }
 
-    public void setHorizontal(){
+    public void setHorizontal() {
         if (!isInit) return;
         sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
-        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
+        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE, 0);
         mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
         mScreenHeight = VideoConfig.RESOLUTION_OPTIONS[1][indexSize];
-        int left,top,right,bottom;
+        int left, top, right, bottom;
         left = 0;
         right = mScreenWidth;
         bottom = mScreenHeight;
         top = 0;
-        if (mLineStartChangeListener != null){
-            mLineStartChangeListener.onChange(left,top,right,bottom);
+        if (mLineStartChangeListener != null) {
+            mLineStartChangeListener.onChange(left, top, right, bottom);
         }
-        if (getAppInfo().getConnectionManager() != null){
+        if (getAppInfo().getConnectionManager() != null) {
             getAppInfo().getConnectionManager().send(new ScreenRotationRequest(FLAG_SCREEN_ROTATION_0));
         }
 
         showOrHideScrollView(false);
     }
 
-    public void initScroll(int large_width,int large_height){
+    public void initScroll(int large_width, int large_height) {
         isPort = false;
 //        if (mLine != null){
 //            if (mLine.isAttachedToWindow())
@@ -178,8 +195,8 @@ public class WindowFloatManager {
 //            if (mSeekBar.isAttachedToWindow())
 //                sWindowManager.removeView(mSeekBar);
 //        }
-        px = (double)large_height / (double)large_width;
-        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE,0);
+        px = (double) large_height / (double) large_width;
+        int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE, 0);
         mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
         mScreenHeight = VideoConfig.RESOLUTION_OPTIONS[1][indexSize];
 
@@ -187,10 +204,10 @@ public class WindowFloatManager {
         getStatusAndNavigationHeight();
 
         mRectHeight = (int) (mScreenWidth * px);// 根据录屏分辨率算
-        if (isROTATION_0()){
+        if (isROTATION_0()) {
             mStartLine = (int) (sDisplayMetrics.widthPixels * px - mStatusBarHeight);// 根据实际分辨率计算
-        }else {
-            mStartLine = (int) ((sDisplayMetrics.heightPixels+mNavigationbarHeight) * px - mStatusBarHeight);// 根据实际分辨率计算
+        } else {
+            mStartLine = (int) ((sDisplayMetrics.heightPixels + mNavigationbarHeight) * px - mStatusBarHeight);// 根据实际分辨率计算
         }
 
 //        mLine = new View(mContext);
@@ -201,27 +218,29 @@ public class WindowFloatManager {
         mLineParams.height = 2;
         mLineParams.y = mStartLine;
 
-        if (mSeekBar == null){
+        if (mSeekBar == null) {
             mSeekBar = new PureVerticalSeekBar(mContext);
         }
         //mSeekBar.setColor(mContext.getResources().getColor(R.color.aliceblue),mContext.getResources().getColor(R.color.blue));
-        mSeekBar.setImage_background(R.mipmap.app_launcher);
+        mSeekBar.setProgress(0);
+        mSeekBar.setImage_background(R.mipmap.app_icon);
         mSeekBar.setDragable(true);
+        mSeekBar.setPadding(80, 0, 80, 0);
         mSeekBar.setOnSlideChangeListener(new PureVerticalSeekBar.OnSlideChangeListener() {
             @Override
             public void OnSlideChangeListener(View view, float progress) {
-                mLineParams.y = (int) ((sDisplayMetrics.heightPixels - mStartLine - mStatusBarHeight)*(progress/100) + mStartLine);
+                mLineParams.y = (int) ((sDisplayMetrics.heightPixels - mStartLine - mStatusBarHeight) * (progress / 100) + mStartLine);
 
-                int left,top,right,bottom;
+                int left, top, right, bottom;
                 left = 0;
                 right = mScreenWidth;
-                bottom = (int) (mScreenHeight * ((double)mLineParams.y  / (double)(sDisplayMetrics.heightPixels- mStatusBarHeight)));
+                bottom = (int) (mScreenHeight * ((double) mLineParams.y / (double) (sDisplayMetrics.heightPixels - mStatusBarHeight)));
                 top = bottom - mRectHeight;
-                if (mLineStartChangeListener != null){
-                    mLineStartChangeListener.onChange(left,top,right,bottom);
+                if (mLineStartChangeListener != null) {
+                    mLineStartChangeListener.onChange(left, top, right, bottom);
                 }
 
-                mLineParams.y = mLineParams.y+mNavigationbarHeight;
+                mLineParams.y = mLineParams.y + mNavigationbarHeight;
 //                if (mLineParams.y>sDisplayMetrics.heightPixels)
 //                    mLine.setVisibility(View.GONE);
 //                else
@@ -237,31 +256,31 @@ public class WindowFloatManager {
 
         mSeekParams = getDefaultSystemWindowParams();
         mSeekParams.x = 10;// 距离特定边距离 根据Gravity
-        mSeekParams.width = 50;
-        mSeekParams.height = sDisplayMetrics.heightPixels/5;
+        mSeekParams.width = 70;
+        mSeekParams.height = sDisplayMetrics.heightPixels / 5;
 
         isInit = true;
-        if (isROTATION_0()){
+        if (isROTATION_0()) {
             setScreen();
-        }else {
+        } else {
             setHorizontal();
         }
     }
 
-    private void getStatusAndNavigationHeight(){
+    private void getStatusAndNavigationHeight() {
         Resources resources = mContext.getResources();
         int resIdStatusbarHeight = resources.getIdentifier("status_bar_height", "dimen", "android");
-        if(resIdStatusbarHeight > 0){
+        if (resIdStatusbarHeight > 0) {
             mStatusBarHeight = resources.getDimensionPixelSize(resIdStatusbarHeight);//状态栏高度
         }
         int resIdShow = resources.getIdentifier("config_showNavigationBar", "bool", "android");
         boolean hasNavigationBar = false;
-        if(resIdShow > 0){
+        if (resIdShow > 0) {
             hasNavigationBar = resources.getBoolean(resIdShow);//是否显示底部navigationBar
         }
-        if(hasNavigationBar){
+        if (hasNavigationBar) {
             int resIdNavigationBar = resources.getIdentifier("navigation_bar_height", "dimen", "android");
-            if(resIdNavigationBar > 0){
+            if (resIdNavigationBar > 0) {
                 mNavigationbarHeight = resources.getDimensionPixelSize(resIdNavigationBar);//navigationBar高度
             }
 
@@ -269,31 +288,32 @@ public class WindowFloatManager {
     }
 
     private boolean isPort;
-    public void showOrHideScrollView(boolean isShow){
-        if (isShow ){
-            if (isROTATION_0()){
 
-                if (!isPort /*&& mLine!= null*/ && mSeekBar != null){
+    public void showOrHideScrollView(boolean isShow) {
+        if (isShow) {
+            if (isROTATION_0()) {
+
+                if (!isPort /*&& mLine!= null*/ && mSeekBar != null) {
 //                    if (mLine.isAttachedToWindow()){
 //                        sWindowManager.removeView(mLine);
 //                    }
-                    if (mSeekBar.isAttachedToWindow()){
+                    if (mSeekBar.isAttachedToWindow()) {
                         sWindowManager.removeView(mSeekBar);
                     }
                     //sWindowManager.addView(mLine,mLineParams);
-                    sWindowManager.addView(mSeekBar,mSeekParams);
+                    sWindowManager.addView(mSeekBar, mSeekParams);
                 }
                 isPort = true;
-            }else {
+            } else {
                 isPort = false;
             }
-        }else {
-            if (/*mLine!= null &&*/ mSeekBar != null){
+        } else {
+            if (/*mLine!= null &&*/ mSeekBar != null) {
 //                if (mLine.isAttachedToWindow()){
 //
 //                    sWindowManager.removeView(mLine);
 //                }
-                if (mSeekBar.isAttachedToWindow()){
+                if (mSeekBar.isAttachedToWindow()) {
 
                     sWindowManager.removeView(mSeekBar);
                 }
@@ -305,20 +325,22 @@ public class WindowFloatManager {
     /**
      * 是否竖屏
      */
-    public boolean isROTATION_0(){
+    public boolean isROTATION_0() {
         int rotation = sWindowManager.getDefaultDisplay().getRotation();
-        Log.d(TAG,"rotation "+rotation);
+        Log.d(TAG, "rotation " + rotation);
         if (ROTATION_0 == rotation || ROTATION_180 == rotation)
             return true;
         else
             return false;
     }
 
-    /** 系统悬浮 */
+    /**
+     * 系统悬浮
+     */
     private FloatingActionButton mFloatingActionButton;
     private FloatingActionMenu mFloatingActionMenu;
 
-    public void showFloatMenus(){
+    public void showFloatMenus() {
 
         // 子菜单图标
         ImageView[] menuIcons = new ImageView[mIconsId.length];
@@ -330,7 +352,7 @@ public class WindowFloatManager {
         fabIcon.setImageDrawable(mContext.getResources().getDrawable(R.mipmap.snow));
 
         SubActionButton.Builder subBuilder = new SubActionButton.Builder(mContext);
-        FloatingActionMenu.Builder menuBuilder = new FloatingActionMenu.Builder(mContext,true);
+        FloatingActionMenu.Builder menuBuilder = new FloatingActionMenu.Builder(mContext, true);
 
         WindowManager.LayoutParams params = FloatingActionButton.Builder.getDefaultSystemWindowParams(mContext);
 
@@ -346,7 +368,7 @@ public class WindowFloatManager {
             menuIcons[i].setImageDrawable(mContext.getResources().getDrawable(mIconsId[i]));
             menuIcons[i].setScaleType(ImageView.ScaleType.CENTER);
             subButtons[i] = subBuilder.setContentView(menuIcons[i]).build();
-            menuBuilder.addSubActionView(subButtons[i],subButtons[i].getLayoutParams().width,subButtons[i].getLayoutParams().height);
+            menuBuilder.addSubActionView(subButtons[i], subButtons[i].getLayoutParams().width, subButtons[i].getLayoutParams().height);
         }
         menuBuilder.setStartAngle(180);
         menuBuilder.setEndAngle(270);
@@ -387,33 +409,45 @@ public class WindowFloatManager {
 
     private void setItemClickListener(SubActionButton[] subButtons) {
         // 投屏
-        subButtons[0].setOnClickListener(v-> {
-            if (getAppInfo().isServerConnected()){
-                if (getAppInfo().isStreamRunning()){
+        subButtons[0].setOnClickListener(v -> {
+            if (getAppInfo().isServerConnected()) {
+                if (getAppInfo().isStreamRunning()) {
                     // 如果正在投屏则停止
-                    EventBus.getDefault().post(new CastMessage(MESSAGE_ACTION_STREAMING_STOP));
-                }else {
+                    //EventBus.getDefault().post(new CastMessage(MESSAGE_ACTION_STREAMING_STOP));
+                    if (mCastModel == CastModel.Normal) {
+                        getAppInfo().getConnectionManager().send(new ChageModelRequest(CastModel.Large.getValue()));
+                        mCastModel = CastModel.Large;
+                        if (mSeekBar != null) mSeekBar.setVisibility(View.VISIBLE);
+                    } else {
+                        getAppInfo().getConnectionManager().send(new ChageModelRequest(CastModel.Normal.getValue()));
+                        mCastModel = CastModel.Normal;
+                        if (mSeekBar != null) mSeekBar.setVisibility(View.GONE);
+                    }
+                } else {
                     // 如果未投屏则开启
                     CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
                     if (stickyEvent == null || MESSAGE_STATUS_TCP_OK.equals(stickyEvent.getMessage())) {
                         EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
                     }
+                    getAppInfo().getConnectionManager().send(new ChageModelRequest(CastModel.Normal.getValue()));
+                    if (mSeekBar != null) mSeekBar.setVisibility(View.GONE);
                 }
-            }else {
+
+            } else {
                 ToastUtil.showToast("未连接服务器,请开启服务器！");
             }
         });
         // 演示
-        subButtons[1].setOnClickListener(v-> {
+        subButtons[1].setOnClickListener(v -> {
             ToastUtil.showToast("开发ing !");
         });
         // 广播
-        subButtons[2].setOnClickListener(v-> {
+        subButtons[2].setOnClickListener(v -> {
             ToastUtil.showToast("开发ing !");
 
         });
         // 设置
-        subButtons[3].setOnClickListener(v-> {
+        subButtons[3].setOnClickListener(v -> {
             mContext.startActivity(new Intent(mContext, SettingActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         });
         subButtons[4].setOnClickListener(v -> {
@@ -422,7 +456,7 @@ public class WindowFloatManager {
     }
 
     public static WindowManager.LayoutParams getDefaultSystemWindowParams() {
-        int paramType  = TYPE_PHONE;
+        int paramType = TYPE_PHONE;
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             paramType = TYPE_APPLICATION_OVERLAY;
         } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.KITKAT && Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
@@ -435,7 +469,7 @@ public class WindowFloatManager {
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 TYPE_SYSTEM_ALERT,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE ,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
                 PixelFormat.TRANSLUCENT);
         params.format = PixelFormat.RGBA_8888;
         params.gravity = Gravity.CENTER | Gravity.LEFT;
@@ -487,8 +521,9 @@ public class WindowFloatManager {
         return false;
     }
 
-    public interface LineStartChangeListener{
-        void onPrepare(int left,int top,int right,int bottom);
-        void onChange(int left,int top,int right,int bottom);
+    public interface LineStartChangeListener {
+        void onPrepare(int left, int top, int right, int bottom);
+
+        void onChange(int left, int top, int right, int bottom);
     }
 }

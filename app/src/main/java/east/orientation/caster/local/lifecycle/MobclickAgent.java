@@ -20,6 +20,7 @@ public class MobclickAgent {
 
     /**
      * 初始化
+     *
      * @param app
      */
     public static void init(Application app) {
@@ -95,9 +96,9 @@ public class MobclickAgent {
         }
     }
 
-    public static void exit(){
+    public static void exit() {
         Iterator<Activity> iterator = mActivityList.iterator();
-        while (iterator.hasNext()){
+        while (iterator.hasNext()) {
             Activity activity = iterator.next();
             activity.finish();
             iterator.remove();

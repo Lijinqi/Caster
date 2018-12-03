@@ -150,7 +150,7 @@ public class FloatWindowPermissionChecker {
         return intent != null && context.getPackageManager().queryIntentActivities(intent, PackageManager.MATCH_DEFAULT_ONLY).size() > 0;
     }
 
-    private static void showAlertToast(Context context){
+    private static void showAlertToast(Context context) {
         Toast.makeText(context, TOAST_HINT, Toast.LENGTH_LONG).show();
     }
 

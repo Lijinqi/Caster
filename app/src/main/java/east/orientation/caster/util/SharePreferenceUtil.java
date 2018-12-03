@@ -31,40 +31,32 @@ public class SharePreferenceUtil {
     /**
      * 保存数据的方法，我们需要拿到保存数据的具体类型，然后根据类型调用不同的保存方法
      */
-    public static void put(Context context, String key, Object object)
-    {
+    public static void put(Context context, String key, Object object) {
 
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
 
-        if (object instanceof String)
-        {
+        if (object instanceof String) {
             editor.putString(key, (String) object);
-        } else if (object instanceof Integer)
-        {
+        } else if (object instanceof Integer) {
             editor.putInt(key, (Integer) object);
-        } else if (object instanceof Boolean)
-        {
+        } else if (object instanceof Boolean) {
             editor.putBoolean(key, (Boolean) object);
-        } else if (object instanceof Float)
-        {
+        } else if (object instanceof Float) {
             editor.putFloat(key, (Float) object);
-        } else if (object instanceof Long)
-        {
+        } else if (object instanceof Long) {
             editor.putLong(key, (Long) object);
-        } else if (object instanceof Serializable)
-        {
-            putSerializable(editor,key,object);
-        } else
-        {
+        } else if (object instanceof Serializable) {
+            putSerializable(editor, key, object);
+        } else {
             editor.putString(key, object.toString());
         }
 
         SharedPreferencesCompat.apply(editor);
     }
 
-    private static void putSerializable(SharedPreferences.Editor editor,String key,Object object) {
+    private static void putSerializable(SharedPreferences.Editor editor, String key, Object object) {
         ByteArrayOutputStream baos = new ByteArrayOutputStream();
         try {
             ObjectOutputStream oos = new ObjectOutputStream(baos);
@@ -77,45 +69,38 @@ public class SharePreferenceUtil {
         }
     }
 
-    public static void put(Context context, String key1, Object object1,String key2, Object object2){
-        put(context,key1,object1);
-        put(context,key2,object2);
+    public static void put(Context context, String key1, Object object1, String key2, Object object2) {
+        put(context, key1, object1);
+        put(context, key2, object2);
     }
 
     /**
      * 得到保存数据的方法，我们根据默认值得到保存的数据的具体类型，然后调用相对于的方法获取值
      */
-    public static Object get(Context context, String key, Object defaultObject)
-    {
+    public static Object get(Context context, String key, Object defaultObject) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
                 Context.MODE_PRIVATE);
 
-        if (defaultObject instanceof String)
-        {
+        if (defaultObject instanceof String) {
             return sp.getString(key, (String) defaultObject);
-        } else if (defaultObject instanceof Integer)
-        {
+        } else if (defaultObject instanceof Integer) {
             return sp.getInt(key, (Integer) defaultObject);
-        } else if (defaultObject instanceof Boolean)
-        {
+        } else if (defaultObject instanceof Boolean) {
             return sp.getBoolean(key, (Boolean) defaultObject);
-        } else if (defaultObject instanceof Float)
-        {
+        } else if (defaultObject instanceof Float) {
             return sp.getFloat(key, (Float) defaultObject);
-        } else if (defaultObject instanceof Long)
-        {
+        } else if (defaultObject instanceof Long) {
             return sp.getLong(key, (Long) defaultObject);
-        } else if (defaultObject instanceof Serializable)
-        {
-            return getSerializable(sp,key);
+        } else if (defaultObject instanceof Serializable) {
+            return getSerializable(sp, key);
         }
 
         return null;
     }
 
-    private static Object getSerializable(SharedPreferences sp,String key) {
+    private static Object getSerializable(SharedPreferences sp, String key) {
         String temp = sp.getString(key, "");
-        ByteArrayInputStream bais =  new ByteArrayInputStream(Base64.decode(temp.getBytes(), Base64.DEFAULT));
+        ByteArrayInputStream bais = new ByteArrayInputStream(Base64.decode(temp.getBytes(), Base64.DEFAULT));
         Object o = null;
         try {
             ObjectInputStream ois = new ObjectInputStream(bais);
@@ -127,43 +112,41 @@ public class SharePreferenceUtil {
         return o;
     }
 
-    public static int get(Context context, String key, int defaultObject){
+    public static int get(Context context, String key, int defaultObject) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
 
-        return sp.getInt(key,defaultObject);
+        return sp.getInt(key, defaultObject);
     }
 
-    public static String get(Context context, String key, String defaultObject){
+    public static String get(Context context, String key, String defaultObject) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
 
-        return sp.getString(key,defaultObject);
+        return sp.getString(key, defaultObject);
     }
 
-    public static float get(Context context, String key, Float defaultObject){
+    public static float get(Context context, String key, Float defaultObject) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
 
-        return sp.getFloat(key,defaultObject);
+        return sp.getFloat(key, defaultObject);
     }
 
-    public static boolean get(Context context, String key, boolean defaultObject){
+    public static boolean get(Context context, String key, boolean defaultObject) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
 
-        return sp.getBoolean(key,defaultObject);
+        return sp.getBoolean(key, defaultObject);
     }
 
-    public static long get(Context context, String key, long defaultObject){
+    public static long get(Context context, String key, long defaultObject) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME, Context.MODE_PRIVATE);
 
-        return sp.getLong(key,defaultObject);
+        return sp.getLong(key, defaultObject);
     }
-
 
 
     /**
      * 移除某个key值已经对应的值
      */
-    public static void remove(Context context, String key)
-    {
+    public static void remove(Context context, String key) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
@@ -174,8 +157,7 @@ public class SharePreferenceUtil {
     /**
      * 清除所有数据
      */
-    public static void clear(Context context)
-    {
+    public static void clear(Context context) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
                 Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sp.edit();
@@ -186,8 +168,7 @@ public class SharePreferenceUtil {
     /**
      * 查询某个key是否已经存在
      */
-    public static boolean contains(Context context, String key)
-    {
+    public static boolean contains(Context context, String key) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
                 Context.MODE_PRIVATE);
         return sp.contains(key);
@@ -196,8 +177,7 @@ public class SharePreferenceUtil {
     /**
      * 返回所有的键值对
      */
-    public static Map<String, ?> getAll(Context context)
-    {
+    public static Map<String, ?> getAll(Context context) {
         SharedPreferences sp = context.getSharedPreferences(FILE_NAME,
                 Context.MODE_PRIVATE);
         return sp.getAll();
@@ -206,6 +186,7 @@ public class SharePreferenceUtil {
 
     /**
      * 保存图片到SharedPreferences
+     *
      * @param mContext
      * @param imageView
      */
@@ -224,6 +205,7 @@ public class SharePreferenceUtil {
 
     /**
      * 从SharedPreferences读取图片
+     *
      * @param mContext
      * @param imageView
      */
@@ -242,22 +224,18 @@ public class SharePreferenceUtil {
     /**
      * 创建一个解决SharedPreferencesCompat.apply方法的一个兼容类
      */
-    private static class SharedPreferencesCompat
-    {
+    private static class SharedPreferencesCompat {
         private static final Method sApplyMethod = findApplyMethod();
 
         /**
          * 反射查找apply的方法
          */
-        @SuppressWarnings({ "unchecked", "rawtypes" })
-        private static Method findApplyMethod()
-        {
-            try
-            {
+        @SuppressWarnings({"unchecked", "rawtypes"})
+        private static Method findApplyMethod() {
+            try {
                 Class clz = SharedPreferences.Editor.class;
                 return clz.getMethod("apply");
-            } catch (NoSuchMethodException e)
-            {
+            } catch (NoSuchMethodException e) {
             }
 
             return null;
@@ -266,21 +244,15 @@ public class SharePreferenceUtil {
         /**
          * 如果找到则使用apply执行，否则使用commit
          */
-        public static void apply(SharedPreferences.Editor editor)
-        {
-            try
-            {
-                if (sApplyMethod != null)
-                {
+        public static void apply(SharedPreferences.Editor editor) {
+            try {
+                if (sApplyMethod != null) {
                     sApplyMethod.invoke(editor);
                     return;
                 }
-            } catch (IllegalArgumentException e)
-            {
-            } catch (IllegalAccessException e)
-            {
-            } catch (InvocationTargetException e)
-            {
+            } catch (IllegalArgumentException e) {
+            } catch (IllegalAccessException e) {
+            } catch (InvocationTargetException e) {
             }
             editor.commit();
         }

@@ -123,6 +123,32 @@
             android:padding="10dp"
             android:text="fps"
             android:layout_below="@+id/ll_fps"/>
+
+        <LinearLayout
+            android:id="@+id/ll_mode"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_below="@+id/tv_fps_selected"
+            android:layout_marginTop="10dp"
+            android:padding="10dp"
+            android:background="@color/white"
+            android:onClick="onClick">
+            <TextView
+                android:id="@+id/tv_mode"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_weight="1"
+                android:text="@string/setting_cast_mode"
+                android:textColor="@color/slategray"
+                android:drawableRight="@mipmap/ic_right"/>
+        </LinearLayout>
+        <TextView
+            android:id="@+id/tv_mode_selected"
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:padding="10dp"
+            android:text="mode"
+            android:layout_below="@+id/ll_mode"/>
     </RelativeLayout>
 </ScrollView>
 

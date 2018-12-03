@@ -22,7 +22,7 @@ import static east.orientation.caster.CastApplication.getAppInfo;
 
 /**
  * Created by ljq on 2018/3/28.
- *
+ * <p>
  * 录音 编码为aac格式
  */
 
@@ -48,8 +48,8 @@ public class AACRecorder {
     private Runnable mAudioProRunnable = new Runnable() {
         @Override
         public void run() {
-            while (!mStopFlag){
-                if(mAudioCodec != null){
+            while (!mStopFlag) {
+                if (mAudioCodec != null) {
                     offerEncoder();
                 }
             }
@@ -60,7 +60,7 @@ public class AACRecorder {
     /**
      * start
      */
-    public void start(){
+    public void start() {
         mStopFlag = false;
         //
         prepareFileIO();
@@ -82,7 +82,7 @@ public class AACRecorder {
     }
 
     synchronized void offerEncoder() {
-        if(mAudioCodec == null) {
+        if (mAudioCodec == null) {
             return;
         }
 
@@ -114,10 +114,10 @@ public class AACRecorder {
             ByteBuffer outputBuffer = mAudioCodec.getOutputBuffer(outputBufferIndex);
             //
             outputBuffer.position(mAudioEncodeBuffer.offset);
-            outputBuffer.limit(mAudioEncodeBuffer.offset+ mAudioEncodeBuffer.size+7);
+            outputBuffer.limit(mAudioEncodeBuffer.offset + mAudioEncodeBuffer.size + 7);
             // 添加ADTS
-            byte[] buf = new byte[mAudioEncodeBuffer.size+7];
-            addADTStoPacket(buf, mAudioEncodeBuffer.size+7);
+            byte[] buf = new byte[mAudioEncodeBuffer.size + 7];
+            addADTStoPacket(buf, mAudioEncodeBuffer.size + 7);
             // 将编码得到的AAC数据 取出到byte[]中
             outputBuffer.get(buf, 7, mAudioEncodeBuffer.size);
 
@@ -128,7 +128,7 @@ public class AACRecorder {
             // todo 写入文件
             writeToFile(buf);
 
-            if (mAudioCodec != null){
+            if (mAudioCodec != null) {
                 mAudioCodec.releaseOutputBuffer(outputBufferIndex, false);
             }
             if ((mAudioEncodeBuffer.flags & MediaCodec.BUFFER_FLAG_END_OF_STREAM) != 0) {
@@ -167,20 +167,20 @@ public class AACRecorder {
        */
 
         // fill in ADTS data
-        packet[0] = (byte)0xFF;
-        packet[1] = (byte)0xF9;
-        packet[2] = (byte)(((profile-1)<<6) + (freqIdx<<2) +(chanCfg>>2));
-        packet[3] = (byte)(((chanCfg&3)<<6) + (packetLen>>11));
-        packet[4] = (byte)((packetLen&0x7FF) >> 3);
-        packet[5] = (byte)(((packetLen&7)<<5) + 0x1F);
-        packet[6] = (byte)0xFC;
+        packet[0] = (byte) 0xFF;
+        packet[1] = (byte) 0xF9;
+        packet[2] = (byte) (((profile - 1) << 6) + (freqIdx << 2) + (chanCfg >> 2));
+        packet[3] = (byte) (((chanCfg & 3) << 6) + (packetLen >> 11));
+        packet[4] = (byte) ((packetLen & 0x7FF) >> 3);
+        packet[5] = (byte) (((packetLen & 7) << 5) + 0x1F);
+        packet[6] = (byte) 0xFC;
     }
 
-    private void prepareFileIO(){
+    private void prepareFileIO() {
         try {
-            File file = new File(getAlbumStorageDir("Mic"),String.format("mic_%d.acc", System.currentTimeMillis()));
+            File file = new File(getAlbumStorageDir("Mic"), String.format("mic_%d.acc", System.currentTimeMillis()));
             fos = new FileOutputStream(file);
-            bos = new BufferedOutputStream(fos,200*1024);
+            bos = new BufferedOutputStream(fos, 200 * 1024);
         } catch (FileNotFoundException e) {
             e.printStackTrace();
         }
@@ -195,30 +195,30 @@ public class AACRecorder {
         return file;
     }
 
-    private void writeToFile(byte[] input){
+    private void writeToFile(byte[] input) {
         try {
             if (bos != null)
-                bos.write(input,0,input.length);
+                bos.write(input, 0, input.length);
         } catch (IOException e) {
             e.printStackTrace();
         }
     }
 
-    private void releaseIO(){
+    private void releaseIO() {
         try {
             if (bos != null) {
                 bos.flush();
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
+        } finally {
             if (bos != null) {
                 try {
                     bos.close();
                 } catch (IOException e) {
                     e.printStackTrace();
-                }finally {
-                    bos=null;
+                } finally {
+                    bos = null;
                 }
             }
         }
@@ -229,8 +229,8 @@ public class AACRecorder {
             }
         } catch (IOException e) {
             e.printStackTrace();
-        }finally {
-            fos=null;
+        } finally {
+            fos = null;
         }
     }
 
@@ -244,7 +244,7 @@ public class AACRecorder {
         //
         releaseIO();
 
-        if (mAudioRecord != null){
+        if (mAudioRecord != null) {
             mAudioRecord.stop();
             mAudioRecord.release();
         }

@@ -81,7 +81,7 @@ public class PureVerticalSeekBar extends View {
         invalidate();
     }
 
-    public void setImage_background(int image_background){
+    public void setImage_background(int image_background) {
         this.image_background = image_background;
     }
 
@@ -212,7 +212,7 @@ public class PureVerticalSeekBar extends View {
             sWidth = sRight - sLeft;
             sHeight = sBottom - sTop;
             x = (float) w / 2;
-            y = (float) ( 0.01 * progress) * sHeight;
+            y = (float) (0.01 * progress) * sHeight;
         }
 
         drawBackground(canvas);

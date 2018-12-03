@@ -24,20 +24,20 @@ import static east.orientation.caster.CastApplication.getAppInfo;
 
 /**
  * Created by ljq on 2018/4/2.
- *
+ * <p>
  * 录音 编码为MP3格式
  */
 
 public class MP3Recorder {
-
+    private static final String TAG = MP3Recorder.class.getSimpleName();
     private AudioRecord mAudioRecord = null;
     private int mBufferSize;
     private short[] mPCMBuffer;
     private Mp3EncodeThread mEncodeThread;
     private boolean mIsRecording;
 
-    public  void start(){
-        if (mIsRecording){
+    public void start() {
+        if (mIsRecording) {
             return;
         }
         mIsRecording = true;
@@ -50,7 +50,7 @@ public class MP3Recorder {
                 while (mIsRecording) {
                     int readSize = mAudioRecord.read(mPCMBuffer, 0, mBufferSize);
                     if (readSize > 0) {
-                        mEncodeThread.addTask(mPCMBuffer,readSize);
+                        mEncodeThread.addTask(mPCMBuffer, readSize);
                     }
                 }
                 // release and finalize audioRecord
@@ -64,7 +64,7 @@ public class MP3Recorder {
         }.start();
     }
 
-    public void stop(){
+    public void stop() {
         mIsRecording = false;
     }
 
@@ -73,7 +73,7 @@ public class MP3Recorder {
         mBufferSize = AudioUtils.getRecordBufferSize(AudioConfig.createDefault());
         mAudioRecord = AudioUtils.getAudioRecord(AudioConfig.createDefault());
         mPCMBuffer = new short[mBufferSize];
-		/*
+        /*
 		 * Initialize lame buffer
 		 * mp3 sampling rate is the same as the recorded pcm sampling rate
 		 * The bit rate is 32kbps
@@ -90,21 +90,26 @@ public class MP3Recorder {
     }
 
 
-    public static class Mp3EncodeThread extends HandlerThread implements AudioRecord.OnRecordPositionUpdateListener{
+    public static class Mp3EncodeThread extends HandlerThread implements AudioRecord.OnRecordPositionUpdateListener {
         private StopHandler mHandler;
 
         private static final int PROCESS_STOP = 1;
+
+        private static final int DEFAULT_FRAME_SIZE = 144000 * AudioConfig.DEFAULT_MIN_BPS / AudioConfig.DEFAULT_FREQUENCY;// 根据LameUtil.init 参数计算 每帧长度
 
         private byte[] mMp3Buffer;
 
         private FileOutputStream mFileOutputStream;
 
-        private List<Byte> mFrame = new ArrayList<>();
+        private byte[] mFramesBuffer;
+        private int mFramesLength;
+        private int mFrameOffset;
 
         private ArrayBlockingQueue<short[]> mPlayQueue = new ArrayBlockingQueue<short[]>(100);
 
         private int mReadSize;
-        private static class StopHandler extends Handler{
+
+        private static class StopHandler extends Handler {
             private Mp3EncodeThread encodeThread;
 
             public StopHandler(Looper looper, Mp3EncodeThread encodeThread) {
@@ -116,7 +121,7 @@ public class MP3Recorder {
             public void handleMessage(Message msg) {
                 if (msg.what == PROCESS_STOP) {
                     //处理缓冲区中的数据
-                    while (encodeThread.processData() > 0);
+                    while (encodeThread.processData() > 0) ;
                     // Cancel any event left in the queue
                     removeCallbacksAndMessages(null);
                     encodeThread.flushAndRelease();
@@ -127,13 +132,16 @@ public class MP3Recorder {
 
         public Mp3EncodeThread(int bufferSize) {
             super("Mp3EncodeThread");
-            try {
+            /*try {
                 File file = new File(getAlbumStorageDir("Mic"),String.format("mic_%d.mp3", System.currentTimeMillis()));
                 mFileOutputStream = new FileOutputStream(file);
             } catch (FileNotFoundException e) {
                 e.printStackTrace();
-            }
+            }*/
             mMp3Buffer = new byte[(int) (7200 + (bufferSize * 2 * 1.25))];
+            mFramesBuffer = new byte[(int) (7200 + (bufferSize * 2 * 1.25)) * 2];
+            mFramesLength = 0;
+            mFrameOffset = 0;
         }
 
         @Override
@@ -154,44 +162,69 @@ public class MP3Recorder {
 
         /**
          * 从缓冲区中读取并处理数据，使用lame编码MP3
-         * @return  从缓冲区中读取的数据的长度
-         * 			缓冲区中没有数据时返回0
+         *
+         * @return 从缓冲区中读取的数据的长度
+         * 缓冲区中没有数据时返回0
          */
         private int processData() {
-            if (mPlayQueue.size() > 0) {
+            while (mPlayQueue.size() > 0) {
                 short[] buffer;
                 try {
-                    buffer = mPlayQueue.take();
+                    if (mFramesLength - mFrameOffset < DEFAULT_FRAME_SIZE + DEFAULT_FRAME_SIZE / 2) {
+                        if (mFrameOffset != 0) {
+                            System.arraycopy(mFramesBuffer, mFrameOffset, mFramesBuffer, 0, mFramesLength - mFrameOffset);
+                            mFramesLength -= mFrameOffset;
+                            mFrameOffset = 0;
+                        }
 
-                    int encodedSize = LameUtil.encode(buffer, buffer, mReadSize, mMp3Buffer);
-                    if (encodedSize > 0){
-                        byte[] audioFrame = new byte[encodedSize];
-                        System.arraycopy(mMp3Buffer,0,audioFrame,0,encodedSize);
-                        //getAppInfo().getAudioStream().add(audioFrame);
-                        for (int i = 0; i < audioFrame.length-2; i++) {
-                            mFrame.add(audioFrame[i]);
-                            if((audioFrame[i+1] & 0xFF) == 0xFF){
-                                if ((audioFrame[i+2] & 0xFF)== 0xFB){
-                                    byte[] buf  = new byte[mFrame.size()];
-                                    for (int j = 0; j < buf.length; j++) {
-                                        buf[j] = mFrame.get(j);
+                        buffer = mPlayQueue.take();
+
+                        int encodedSize = LameUtil.encode(buffer, buffer, mReadSize, mMp3Buffer);
+                        System.arraycopy(mMp3Buffer, 0, mFramesBuffer, mFramesLength, encodedSize);
+                        mFramesLength += encodedSize;
+
+                        if (mFramesLength - mFrameOffset < DEFAULT_FRAME_SIZE + DEFAULT_FRAME_SIZE / 2)
+                            continue;
+                    }
+
+                    boolean bAligned = false;
+                    for (int i = mFrameOffset; i < mFramesLength; i++) {
+
+                        if (mFramesBuffer[i] == -1 && mFramesBuffer[i + 1] == -5) {
+                            if (i == mFrameOffset) {
+                                bAligned = true;
+                                i += DEFAULT_FRAME_SIZE - 1;
+                            } else {
+                                if (bAligned) {
+                                    int fremesize = i - mFrameOffset;
+                                    if (fremesize >= DEFAULT_FRAME_SIZE - 1 && fremesize <= DEFAULT_FRAME_SIZE + 2) {
+
+                                        byte[] buf = new byte[fremesize];
+                                        System.arraycopy(mFramesBuffer, mFrameOffset, buf, 0, fremesize);
+                                        // 写入文件
+                                        //mFileOutputStream.write(buf);
+                                        // 加入传输队列
+                                        getAppInfo().getAudioStream().add(buf);
+
+                                        //Log.e(TAG,bytesToHexString(buf));
+                                        //Log.d(TAG, "add size = " + buf.length);
+                                    } else {
+                                        mFrameOffset++;
+                                        break;
                                     }
-                                    //mFileOutputStream.write(buf);
-                                    getAppInfo().getAudioStream().add(buf);
-                                    mFrame.clear();
                                 }
-                            }
+                                mFrameOffset = i;
+                                bAligned = true;
+                                i += DEFAULT_FRAME_SIZE - 1;
+                                if (mFramesLength - mFrameOffset < DEFAULT_FRAME_SIZE + DEFAULT_FRAME_SIZE / 2)
+                                    break;
 
-                            if (i == audioFrame.length-3){
-                                mFrame.add(audioFrame[i+1]);
-                                mFrame.add(audioFrame[i+2]);
                             }
                         }
                     }
                 } catch (Exception e) {
                     e.printStackTrace();
                 }
-                return mReadSize;
             }
             return 0;
         }
@@ -206,12 +239,13 @@ public class MP3Recorder {
             check();
             mHandler.sendEmptyMessage(PROCESS_STOP);
         }
+
         public Handler getHandler() {
             check();
             return mHandler;
         }
 
-        public void addTask(short[] rawData,int readSize){
+        public void addTask(short[] rawData, int readSize) {
             try {
                 mReadSize = readSize;
                 mPlayQueue.put(rawData);
@@ -229,24 +263,29 @@ public class MP3Recorder {
             if (flushResult > 0) {
                 try {
                     byte[] audioFrame = new byte[flushResult];
-                    System.arraycopy(mMp3Buffer,0,audioFrame,0,flushResult);
+                    System.arraycopy(mMp3Buffer, 0, audioFrame, 0, flushResult);
+                    // 写入文件
+                    //mFileOutputStream.write(mMp3Buffer, 0, flushResult);
+                    // 加入传输队列
                     getAppInfo().getAudioStream().add(audioFrame);
 
-                    mFileOutputStream.write(mMp3Buffer, 0, flushResult);
-                } catch (IOException e) {
+                    //Log.d(TAG,"flush add size"+audioFrame.length);
+
+                } catch (Exception e) {
                     e.printStackTrace();
-                }finally{
-                    if (mFileOutputStream != null) {
+                } finally {
+                    /*if (mFileOutputStream != null) {
                         try {
                             mFileOutputStream.close();
                         } catch (IOException e) {
                             e.printStackTrace();
                         }
-                    }
+                    }*/
                     LameUtil.close();
                 }
             }
         }
+
         public File getAlbumStorageDir(String albumName) {
             // Get the directory for the user's public pictures directory.
             File file = new File(Environment.getExternalStorageDirectory(), albumName);
@@ -254,6 +293,22 @@ public class MP3Recorder {
                 Log.e("@@@", "Directory not created");
             }
             return file;
+        }
+
+        public static String bytesToHexString(byte[] src) {
+            StringBuilder stringBuilder = new StringBuilder("");
+            if (src == null || src.length <= 0) {
+                return null;
+            }
+            for (int i = 0; i < src.length; i++) {
+                int v = src[i] & 0xFF;
+                String hv = Integer.toHexString(v);
+                if (hv.length() < 2) {
+                    stringBuilder.append(0);
+                }
+                stringBuilder.append(hv.toUpperCase() + " ");
+            }
+            return stringBuilder.toString();
         }
     }
 }

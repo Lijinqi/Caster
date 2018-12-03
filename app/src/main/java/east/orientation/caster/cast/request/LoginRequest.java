@@ -4,16 +4,16 @@ import east.orientation.caster.local.Common;
 
 /**
  * Created by ljq on 2018/3/15.
- *
+ * <p>
  * 登录
- *
+ * <p>
  * data：携带登陆类型
  */
 
 public class LoginRequest extends BaseRequest {
     private char type;//登录类型
 
-    public LoginRequest(char type){
+    public LoginRequest(char type) {
         this.type = type;
     }
 
@@ -24,7 +24,7 @@ public class LoginRequest extends BaseRequest {
 
     @Override
     public byte[] getData() {
-        String cmd = type+"abc\0\0";
+        String cmd = type + "abc\0\0";
 
         return cmd.getBytes();
     }

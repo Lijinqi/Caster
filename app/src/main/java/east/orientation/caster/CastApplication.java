@@ -8,7 +8,6 @@ import android.content.pm.PackageManager;
 import android.net.wifi.WifiManager;
 import android.util.Log;
 
-import com.xuhao.android.libsocket.sdk.OkSocket;
 
 import java.io.File;
 
@@ -18,6 +17,7 @@ import east.orientation.caster.local.AppInfo;
 import east.orientation.caster.local.lifecycle.MobclickAgent;
 import east.orientation.caster.cast.request.LogoutRequest;
 import east.orientation.caster.cast.request.StopCastRequest;
+import east.orientation.caster.socket.SocketManager;
 
 
 /**
@@ -29,7 +29,7 @@ public class CastApplication extends Application {
     public static AppInfo sAppInfo;
     private ExitBroadcastReceiver mExitBroadcastReceiver;
 
-    public static CastApplication getAppContext(){
+    public static CastApplication getAppContext() {
         return sAppInstance;
     }
 
@@ -42,7 +42,7 @@ public class CastApplication extends Application {
         // 注册广播
         initExitReceiver();
         // 初始化OkSocket
-        OkSocket.initialize(this);
+        SocketManager.getInstance().init();
         // activity管理初始化
         MobclickAgent.init(this);
         // 开启投屏服务
@@ -53,14 +53,14 @@ public class CastApplication extends Application {
         return sAppInfo;
     }
 
-    private void initExitReceiver(){
+    private void initExitReceiver() {
         mExitBroadcastReceiver = new ExitBroadcastReceiver();
-        sAppInstance.registerReceiver(mExitBroadcastReceiver,new IntentFilter("close_caster"));
+        sAppInstance.registerReceiver(mExitBroadcastReceiver, new IntentFilter("close_caster"));
     }
 
-    public void AppExit(){
-        Log.e("APP","AppExit");
-        if (sAppInfo.getConnectionManager() != null){
+    public void AppExit() {
+        Log.e("APP", "AppExit");
+        if (sAppInfo.getConnectionManager() != null) {
             // 发送登出服务器请求
             sAppInfo.getConnectionManager().send(new LogoutRequest());
             // 发送关闭大屏显示请求
@@ -70,9 +70,10 @@ public class CastApplication extends Application {
         // 注销广播
         sAppInstance.unregisterReceiver(mExitBroadcastReceiver);
         // 停止服务
-        if (sAppInfo.getCastScreenService() != null){
+        if (sAppInfo.getCastScreenService() != null) {
             sAppInfo.getCastScreenService().onDestroy();
         }
+
         MobclickAgent.exit();
     }
 }

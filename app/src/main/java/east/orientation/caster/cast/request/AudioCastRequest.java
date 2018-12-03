@@ -7,9 +7,9 @@ import east.orientation.caster.local.Common;
  */
 
 public class AudioCastRequest extends BaseRequest {
-    private byte[] frame ;
+    private byte[] frame;
 
-    public AudioCastRequest(byte[] frame){
+    public AudioCastRequest(byte[] frame) {
         this.frame = frame;
     }
 

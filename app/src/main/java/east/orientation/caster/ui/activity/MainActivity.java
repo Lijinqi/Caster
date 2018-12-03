@@ -6,9 +6,13 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.graphics.PixelFormat;
+import android.hardware.display.DisplayManager;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
+import android.net.wifi.p2p.WifiP2pManager;
+import android.os.Handler;
+import android.os.Looper;
+import android.os.Message;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
@@ -16,36 +20,43 @@ import android.view.View;
 import android.view.WindowManager;
 import android.widget.Toast;
 
-import com.xuhao.android.libsocket.sdk.ConnectionInfo;
-import com.xuhao.android.libsocket.sdk.OkSocket;
-import com.xuhao.android.libsocket.sdk.OkSocketOptions;
-import com.xuhao.android.libsocket.sdk.SocketActionAdapter;
-import com.xuhao.android.libsocket.sdk.bean.IPulseSendable;
-import com.xuhao.android.libsocket.sdk.bean.ISendable;
-import com.xuhao.android.libsocket.sdk.bean.OriginalData;
-import com.xuhao.android.libsocket.sdk.connection.NoneReconnect;
-import com.xuhao.android.libsocket.utils.BytesUtils;
+
+import com.xuhao.didi.core.iocore.interfaces.IPulseSendable;
+import com.xuhao.didi.core.iocore.interfaces.ISendable;
+import com.xuhao.didi.core.pojo.OriginalData;
+import com.xuhao.didi.socket.client.sdk.OkSocket;
+import com.xuhao.didi.socket.client.sdk.client.ConnectionInfo;
+import com.xuhao.didi.socket.client.sdk.client.OkSocketOptions;
+import com.xuhao.didi.socket.client.sdk.client.action.SocketActionAdapter;
+import com.xuhao.didi.socket.client.sdk.client.connection.NoneReconnect;
 
 import org.greenrobot.eventbus.EventBus;
 import org.greenrobot.eventbus.Subscribe;
 import org.greenrobot.eventbus.ThreadMode;
 
+import java.io.File;
 import java.nio.ByteOrder;
 
 import east.orientation.caster.R;
+import east.orientation.caster.WiFiDirectReceiver;
 import east.orientation.caster.cast.CastScreenService;
 import east.orientation.caster.cast.CastWaiter;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.evevtbus.ConnectMessage;
 import east.orientation.caster.local.AudioConfig;
 import east.orientation.caster.local.Common;
-import east.orientation.caster.cast.protocol.NormalHeaderProtocol;
+import east.orientation.caster.cast.protocol.NormalProtocol;
 import east.orientation.caster.cast.request.LoginRequest;
 import east.orientation.caster.cast.request.Mp3ParamsResponse;
 import east.orientation.caster.cast.request.Pluse;
 import east.orientation.caster.cast.request.SelectRectRequest;
 import east.orientation.caster.cast.request.SelectRectResponse;
 import east.orientation.caster.cast.request.StartCastRequest;
+import east.orientation.caster.socket.SocketManager;
+import east.orientation.caster.socket.UpdateManager;
+import east.orientation.caster.util.BytesUtils;
+import east.orientation.caster.util.CommonUtil;
+import east.orientation.caster.util.SharePreferenceUtil;
 import east.orientation.caster.util.ToastUtil;
 import east.orientation.caster.view.WindowFloatManager;
 import permissions.dispatcher.NeedsPermission;
@@ -55,7 +66,6 @@ import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
 import static android.view.Surface.ROTATION_90;
-import static com.xuhao.android.libsocket.sdk.OkSocket.open;
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
 import static east.orientation.caster.cast.CastScreenService.getProjectionManager;
@@ -69,26 +79,44 @@ import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK
 import static east.orientation.caster.local.VideoConfig.REQUEST_CODE_SCREEN_CAPTURE;
 
 @RuntimePermissions
-public class MainActivity extends AppCompatActivity{
+public class MainActivity extends AppCompatActivity {
     private static final String TAG = "MainActivity";
+    private static final int ACTION_SHUTDOWN = 1;
+    private static final int ACTION_DISCONNECTED = 2;
+    private static final int ACTION_CONNECTED = 3;
 
-    private boolean isVertical;
     private int mResultCode;// 请求录屏权限返回的 code
     private Intent mResultData;//请求录屏权限返回的 intent
     private boolean isReset;
+
+    private Handler mHandler = new Handler(Looper.getMainLooper()) {
+        @Override
+        public void handleMessage(Message msg) {
+            super.handleMessage(msg);
+            switch (msg.what) {
+                case ACTION_SHUTDOWN:
+                    ToastUtil.showToast("服务器断开", Toast.LENGTH_LONG);
+                    break;
+                case ACTION_DISCONNECTED:
+                    ToastUtil.showToast("服务器断开", Toast.LENGTH_LONG);
+                    break;
+                case ACTION_CONNECTED:
+                    ToastUtil.showToast("已连接服务器", Toast.LENGTH_LONG);
+                    break;
+            }
+        }
+    };
     // 屏幕旋转监听
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
         public void onReceive(Context context, Intent intent) {
             int rotation = WindowFloatManager.getWindowManager().getDefaultDisplay().getRotation();
-            Log.e("@@","屏 :"+rotation);
-            if (ROTATION_0 == rotation || ROTATION_180 == rotation){
+            Log.e("@@", "屏 :" + rotation);
+            if (ROTATION_0 == rotation || ROTATION_180 == rotation) {
                 // 竖屏
-                isVertical = true;
                 WindowFloatManager.getInstance().setScreen();
-            }else if (ROTATION_90 == rotation || ROTATION_270 ==rotation){
+            } else if (ROTATION_90 == rotation || ROTATION_270 == rotation) {
                 // 横屏
-                isVertical = false;
                 WindowFloatManager.getInstance().setHorizontal();
             }
         }
@@ -98,31 +126,32 @@ public class MainActivity extends AppCompatActivity{
     private OkSocketOptions mOkOptions;
     private SocketActionAdapter mSocketActionAdapter = new SocketActionAdapter() {
         @Override
-        public void onSocketIOThreadStart(Context context, String action) {
-            super.onSocketIOThreadStart(context, action);
-            Log.e(TAG,"onSocketIOThreadStart");
+        public void onSocketIOThreadStart(String action) {
+            super.onSocketIOThreadStart(action);
+            Log.e(TAG, "onSocketIOThreadStart");
         }
 
         @Override
-        public void onSocketIOThreadShutdown(Context context, String action, Exception e) {
-            super.onSocketIOThreadShutdown(context, action, e);
-            Log.e("@@","onSocketIOThreadShutdown"+e);
+        public void onSocketIOThreadShutdown(String action, Exception e) {
+            super.onSocketIOThreadShutdown(action, e);
+            Log.e("@@", "onSocketIOThreadShutdown" + e);
             // 重置搜索广播
             resetSearcher();
-            ToastUtil.showToast("服务器断开", Toast.LENGTH_LONG);
+            mHandler.obtainMessage(ACTION_SHUTDOWN).sendToTarget();
+
         }
 
         @Override
-        public void onSocketDisconnection(Context context, ConnectionInfo info, String action, Exception e) {
-            super.onSocketDisconnection(context, info, action, e);
-            Log.e("@@","onSocketDisconnection"+e);
+        public void onSocketDisconnection(ConnectionInfo info, String action, Exception e) {
+            super.onSocketDisconnection(info, action, e);
+            Log.e("@@", "onSocketDisconnection" + e);
             // 重置搜索广播
             resetSearcher();
         }
 
         @Override
-        public void onSocketConnectionSuccess(Context context, ConnectionInfo info, String action) {
-            super.onSocketConnectionSuccess(context, info, action);
+        public void onSocketConnectionSuccess(ConnectionInfo info, String action) {
+            super.onSocketConnectionSuccess(info, action);
             isReset = false;
             // 设置连接状态
             getAppInfo().setServerConnected(true);
@@ -130,36 +159,37 @@ public class MainActivity extends AppCompatActivity{
             getAppInfo().getConnectionManager().getPulseManager().setPulseSendable(new Pluse(1)).pulse();
             // 连接成功则发送登陆请求
             getAppInfo().getConnectionManager().send(new LoginRequest(Common.LOGIN_TYPE_TEACHER));
-            Log.e("@@","onSocketConnectionSuccess");
-            ToastUtil.showToast("已连接服务器", Toast.LENGTH_LONG);
+            Log.e("@@", "onSocketConnectionSuccess");
+
+            mHandler.obtainMessage(ACTION_CONNECTED).sendToTarget();
         }
 
         @Override
-        public void onSocketConnectionFailed(Context context, ConnectionInfo info, String action, Exception e) {
-            super.onSocketConnectionFailed(context, info, action, e);
-            Log.e("@@","onSocketConnectionFailed"+e);
+        public void onSocketConnectionFailed(ConnectionInfo info, String action, Exception e) {
+            super.onSocketConnectionFailed(info, action, e);
+            Log.e("@@", "onSocketConnectionFailed" + e);
             isReset = false;
             // 重置搜索广播
             resetSearcher();
         }
 
         @Override
-        public void onSocketReadResponse(Context context, ConnectionInfo info, String action, OriginalData data) {
-            super.onSocketReadResponse(context, info, action, data);
+        public void onSocketReadResponse(ConnectionInfo info, String action, OriginalData data) {
+            super.onSocketReadResponse(info, action, data);
             //Log.e(TAG,"onSocketReadResponse");
             // 处理回执
             handleResponse(data);
         }
 
         @Override
-        public void onSocketWriteResponse(Context context, ConnectionInfo info, String action, ISendable data) {
-            super.onSocketWriteResponse(context, info, action, data);
+        public void onSocketWriteResponse(ConnectionInfo info, String action, ISendable data) {
+            super.onSocketWriteResponse(info, action, data);
             //Log.e(TAG,"发送 ："+data.parse().length);
         }
 
         @Override
-        public void onPulseSend(Context context, ConnectionInfo info, IPulseSendable data) {
-            super.onPulseSend(context, info, data);
+        public void onPulseSend(ConnectionInfo info, IPulseSendable data) {
+            super.onPulseSend(info, data);
             //Log.e(TAG,"心跳已发送");
         }
     };
@@ -167,7 +197,7 @@ public class MainActivity extends AppCompatActivity{
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        //Log.e(TAG,"onNewIntent");
+        Log.e(TAG, "Caster onNewIntent");
         onBackPressed();
     }
 
@@ -187,48 +217,93 @@ public class MainActivity extends AppCompatActivity{
         setContentView(R.layout.activity_main);
     }
 
-    private void hideWindow(){
+    private void hideWindow() {
         WindowManager.LayoutParams params = new WindowManager.LayoutParams();
-        params.width =  0;
-        params.height = 0 ;//此句用于自定义窗口大小，实现Activity窗口非全屏显示
+        params.width = 0;
+        params.height = 0;//此句用于自定义窗口大小，实现Activity窗口非全屏显示
         params.flags = WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
                 WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE | WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON;
         this.getWindow().setAttributes(params);//params2用于设备整个Activity的窗口属性
     }
 
     /**
-     *
      * 初始化
      */
     private void init() {
-        //connectToServer("192.168.0.199",10402);
-        startSearchServer();
-        registerReceiver(mReceiver,new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
+        //connectToServer("192.168.0.108",10402);
+        if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_CAST_MODE,0) == 0) {
+            startSearchServer();
+        } else {
+
+        }
+
+        registerReceiver(mReceiver, new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
+        // 检查更新
+        checkUpdate();
+    }
+
+    private void checkUpdate() {
+        Log.i(TAG, "checkUpdate " + SocketManager.getInstance().isConnect());
+        UpdateManager.init(getApplicationContext(), new UpdateManager.UpdateAdapter() {
+            @Override
+            public void update(UpdateManager.Apk apk) {
+                Log.d(TAG, "update: " + apk);
+                int localVersion = CommonUtil.getAppVersionCode(getApplicationContext());
+                if (localVersion > 0 && localVersion < apk.getVersionCode())
+                    UpdateManager.download(UpdateManager.TYPE_APK, apk.getApkName(), 0, UpdateManager.DEFAULT_PACKAGE_SIZE);
+            }
+
+            @Override
+            public void noUpdate() {
+                Log.d(TAG, "no update");
+            }
+        }, new UpdateManager.DownloadAdapter() {
+            @Override
+            public void start(String apkName) {
+                Log.d(TAG, "download start: " + apkName);
+                UpdateManager.createNotification(getApplicationContext());
+            }
+
+            @Override
+            public void progress(long progress, long totalSize) {
+                Log.d(TAG, "download progress: " + progress + "/" + totalSize);
+                UpdateManager.updateNotification(progress, totalSize);
+            }
+
+            @Override
+            public void finish(final String apkPath) {
+                Log.d(TAG, "download end: " + apkPath);
+                UpdateManager.finishNotification(getApplicationContext(), new File(apkPath));
+
+                UpdateManager.install(new File(apkPath), getApplicationContext());
+
+                UpdateManager.onCancel();
+            }
+        });
+        UpdateManager.getUpdate(UpdateManager.TYPE_APK, Common.APP_KEY);
     }
 
     /**
-     *
      * start udp广播监听
      */
-    private void startSearchServer(){
-        CastWaiter.getInstance().setSearchListener((ip, port) ->{
-            EventBus.getDefault().post(new ConnectMessage(ip,port));
+    private void startSearchServer() {
+        CastWaiter.getInstance().setSearchListener((ip, port) -> {
+            EventBus.getDefault().post(new ConnectMessage(ip, port));
         });
         CastWaiter.getInstance().start();
     }
 
     /**
-     *
      * stop udp广播监听
      */
-    private void stopSearchServer(){
+    private void stopSearchServer() {
         CastWaiter.getInstance().stop();
     }
 
     /**
      * 重置 搜索广播 、客户端连接状态
      */
-    private void resetSearcher(){
+    private void resetSearcher() {
         if (isReset) return;
         // 设置连接状态
         getAppInfo().setServerConnected(false);
@@ -241,55 +316,53 @@ public class MainActivity extends AppCompatActivity{
     }
 
     private Object mLock = new Object();
+
     /**
      * 连接服务器
+     *
      * @param ip
      */
-    private void connectToServer(String ip,int port){
-            if (getAppInfo().getConnectionManager()!=null && getAppInfo().getConnectionManager().isConnect()) {
-                return;
+    private void connectToServer(String ip, int port) {
+        if (getAppInfo().getConnectionManager() != null && getAppInfo().getConnectionManager().isConnect()) {
+            return;
+        }
+        mConnectionInfo = new ConnectionInfo(ip, port);
+        getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo));
+        if (getAppInfo().getConnectionManager() == null) {
+
+            return;
+        }
+
+        mOkOptions = getAppInfo().getConnectionManager().getOption();
+
+        mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
+                .setWritePackageBytes(1024 * 1024)// 设置每个包的长度
+                .setReaderProtocol(new NormalProtocol())// 设置自定义包头
+                .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
+                .setPulseFrequency(2000)// 设置心跳间隔/毫秒
+                .setPulseFeedLoseTimes(2)
+                .setReconnectionManager(new NoneReconnect())
+                .build();
+        getAppInfo().getConnectionManager().option(mOkOptions);
+        getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
+        getAppInfo().getConnectionManager().registerReceiver(mSocketActionAdapter);
+
+        synchronized (mLock) {
+            if (!getAppInfo().getConnectionManager().isConnect()) {
+                getAppInfo().getConnectionManager().connect();
             }
-            mConnectionInfo = new ConnectionInfo(ip, port);
-            getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo));
-            OkSocket.setBackgroundSurvivalTime(-1);
-            if (getAppInfo().getConnectionManager() == null) {
-
-                return;
-            }
-
-            mOkOptions = getAppInfo().getConnectionManager().getOption();
-
-            mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
-                    .setWritePackageBytes(1024*1024)// 设置每个包的长度
-                    .setHeaderProtocol(new NormalHeaderProtocol())// 设置自定义包头
-                    .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
-                    .setPulseFrequency(2000)// 设置心跳间隔/毫秒
-                    .setPulseFeedLoseTimes(2)
-                    .setReconnectionManager(new NoneReconnect())
-                    //.setConnectionHolden(false)
-                    .build();
-            getAppInfo().getConnectionManager().option(mOkOptions);
-            getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
-            getAppInfo().getConnectionManager().registerReceiver(mSocketActionAdapter);
-
-            synchronized (mLock){
-                if (!getAppInfo().getConnectionManager().isConnect()) {
-                    getAppInfo().getConnectionManager().connect();
-                }
-            }
+        }
     }
 
     /**
-     *  处理服务端回复的数据
+     * 处理服务端回复的数据
      *
-     *  @param data  服务端回复的数据
+     * @param data 服务端回复的数据
      *
-     *  data包括：
-     *  header：len (长度)+ (Ornt 协议包头 4)+ flag(标志 4)
-     *  长度为 8+body.length
-     *
-     *  body  ：携带的数据
-     *  {@link NormalHeaderProtocol}
+     *             data包括：
+     *             header：len (长度)+ (Ornt 协议包头 4)+ flag(标志 4)长度为 8+body.length
+     *             body  ：携带的数据
+     *             {@link NormalProtocol}
      */
     private void handleResponse(OriginalData data) {
         // 包头
@@ -297,19 +370,19 @@ public class MainActivity extends AppCompatActivity{
         // 包体
         byte[] body = data.getBodyBytes();
         // 长度
-        int len = BytesUtils.bytesToInt(header,0);
+        int len = BytesUtils.bytesToInt(header, 0);
         // 标志
-        int flag = BytesUtils.bytesToInt(header,8);
+        int flag = BytesUtils.bytesToInt(header, 8);
 
-        switch (flag){
+        switch (flag) {
             case Common.FLAG_LOGIN_RESPONSE:// 登录回执
-                boolean isOk = BytesUtils.bytesToInt(body,0) == 1;
+                boolean isOk = BytesUtils.bytesToInt(body, 0) == 1;
                 if (isOk) {
                     // 登录成功 则请求分辨率
                     getAppInfo().getConnectionManager().send(new SelectRectRequest());
                     // 开始投屏
                     getAppInfo().getConnectionManager().send(new StartCastRequest());
-                } else{
+                } else {
                     // 登陆失败
 
                 }
@@ -322,13 +395,13 @@ public class MainActivity extends AppCompatActivity{
             case Common.FLAG_MP3_PARAM_REQUEST:
                 // mp3参数请求
                 getAppInfo().getConnectionManager().send(new Mp3ParamsResponse(AudioConfig.DEFAULT_CHANNEL_COUNT,
-                        AudioConfig.DEFAULT_FREQUENCY,AudioConfig.DEFAULT_MP3_SIMPLE_FORMAT));
+                        AudioConfig.DEFAULT_FREQUENCY, AudioConfig.DEFAULT_MP3_SIMPLE_FORMAT));
                 break;
             case Common.FLAG_SCREEN_LARGE_SIZE_RESPONSE:
-                int large_width = BytesUtils.bytesToInt(body,0);
-                int large_height = BytesUtils.bytesToInt(body,4);
+                int large_width = BytesUtils.bytesToInt(body, 0);
+                int large_height = BytesUtils.bytesToInt(body, 4);
                 //
-                WindowFloatManager.getInstance().initScroll(large_width,large_height);
+                WindowFloatManager.getInstance().initScroll(large_width, large_height);
                 // 开始投屏
                 getAppInfo().getConnectionManager().send(new StartCastRequest());
                 WindowFloatManager.getInstance().setLineStartChangeListener(new WindowFloatManager.LineStartChangeListener() {
@@ -337,14 +410,14 @@ public class MainActivity extends AppCompatActivity{
 
                         //Log.d(TAG,WindowFloatManager.getInstance().isROTATION_0()+" Change left "+left+" top "+top+" right "+right+" bottom "+bottom);
                         // 发送选中区域
-                        getAppInfo().getConnectionManager().send(new SelectRectResponse(left,top,right,bottom));
+                        getAppInfo().getConnectionManager().send(new SelectRectResponse(left, top, right, bottom));
                     }
 
                     @Override
                     public void onPrepare(int left, int top, int right, int bottom) {
                         // 发送选中区域
                         //Log.d(TAG,"Prepare  left "+left+" top "+top+" right "+right+" bottom "+bottom);
-                        getAppInfo().getConnectionManager().send(new SelectRectResponse(left,top,right,bottom));
+                        getAppInfo().getConnectionManager().send(new SelectRectResponse(left, top, right, bottom));
                     }
                 });
 
@@ -360,14 +433,14 @@ public class MainActivity extends AppCompatActivity{
      * @param v
      */
     public void onBtnClick(View v) {
-        switch (v.getId()){
+        switch (v.getId()) {
             case R.id.btn_castToLarge:// 投到大屏幕
-                if (getAppInfo().isServerConnected()){
+                if (getAppInfo().isServerConnected()) {
                     CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
                     if (stickyEvent == null || MESSAGE_STATUS_TCP_OK.equals(stickyEvent.getMessage())) {
                         EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
                     }
-                }else {
+                } else {
                     ToastUtil.showToast("未连接服务器,请开启服务器！");
                 }
 
@@ -377,7 +450,7 @@ public class MainActivity extends AppCompatActivity{
                 ToastUtil.showToast("开发ing !");
                 break;
             case R.id.btn_setting:// 设置
-                startActivity(new Intent(this,SettingActivity.class));
+                startActivity(new Intent(this, SettingActivity.class));
                 break;
             case R.id.btn_castStuScreen: // 投射某个学生的画面
                 ToastUtil.showToast("开发ing !");
@@ -391,7 +464,7 @@ public class MainActivity extends AppCompatActivity{
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d(TAG,"MainActivity onStart");
+        Log.d(TAG, "MainActivity onStart");
         getAppInfo().setActivityRunning(true);
     }
 
@@ -404,20 +477,20 @@ public class MainActivity extends AppCompatActivity{
                     ToastUtil.showToast("wifi未连接,请连接wifi！");
                     return;
                 }
-                if(getAppInfo().isStreamRunning()) return;
+                if (getAppInfo().isStreamRunning()) return;
 
                 final MediaProjectionManager projectionManager = getProjectionManager();
                 if (projectionManager != null) {
 
-                    if(mResultData != null && mResultCode == RESULT_OK){
-                        if (WindowFloatManager.getInstance().isROTATION_0()){
+                    if (mResultData != null && mResultCode == RESULT_OK) {
+                        if (WindowFloatManager.getInstance().isROTATION_0()) {
                             // 重新获取分辨率
                             WindowFloatManager.getInstance().setScreen();
-                        }else {
+                        } else {
                             WindowFloatManager.getInstance().setHorizontal();
                         }
                         startRecorderScreen();
-                    }else {
+                    } else {
                         startActivityForResult(projectionManager.createScreenCaptureIntent(), REQUEST_CODE_SCREEN_CAPTURE);
                     }
 
@@ -435,15 +508,15 @@ public class MainActivity extends AppCompatActivity{
     }
 
     @Subscribe(threadMode = ThreadMode.MAIN)
-    public void onEvent(ConnectMessage message){
-        connectToServer(message.getIp(),message.getPort());
+    public void onEvent(ConnectMessage message) {
+        connectToServer(message.getIp(), message.getPort());
     }
 
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
         super.onActivityResult(requestCode, resultCode, data);
-        MainActivityPermissionsDispatcher.onActivityResult(this,requestCode);
+        MainActivityPermissionsDispatcher.onActivityResult(this, requestCode);
         switch (requestCode) {
             case REQUEST_CODE_SCREEN_CAPTURE:
                 if (resultCode != RESULT_OK) {
@@ -458,7 +531,7 @@ public class MainActivity extends AppCompatActivity{
 
                 break;
             default:
-                Log.e(TAG,"Unknown request code: " + requestCode);
+                Log.e(TAG, "Unknown request code: " + requestCode);
         }
         //
         onBackPressed();
@@ -466,9 +539,8 @@ public class MainActivity extends AppCompatActivity{
 
     /**
      * 开始录屏
-     *
      */
-    private void startRecorderScreen(){
+    private void startRecorderScreen() {
         final MediaProjectionManager projectionManager = CastScreenService.getProjectionManager();
         if (projectionManager == null)
             return;
@@ -483,7 +555,7 @@ public class MainActivity extends AppCompatActivity{
     }
 
     @NeedsPermission({Manifest.permission.SYSTEM_ALERT_WINDOW})
-    void showSystemWindow(){
+    void showSystemWindow() {
         //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
         WindowFloatManager.getInstance().showFloatMenus();
         // 回到Home界面
@@ -495,15 +567,15 @@ public class MainActivity extends AppCompatActivity{
             Manifest.permission.READ_EXTERNAL_STORAGE,
             Manifest.permission.RECORD_AUDIO,
             Manifest.permission.CAPTURE_AUDIO_OUTPUT})
-    void getRuntimePermission(){
+    void getRuntimePermission() {
 
     }
 
     @SuppressLint("NeedOnRequestPermissionsResult")
     @Override
-    public void onRequestPermissionsResult(int requestCode, String[] permissions,int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode, String[] permissions, int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
-        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this,requestCode,grantResults);
+        MainActivityPermissionsDispatcher.onRequestPermissionsResult(this, requestCode, grantResults);
     }
 
     @Override

@@ -6,10 +6,9 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
-import android.hardware.display.DisplayManager;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.net.wifi.p2p.WifiP2pManager;
+import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
@@ -24,6 +23,7 @@ import android.widget.Toast;
 import com.xuhao.didi.core.iocore.interfaces.IPulseSendable;
 import com.xuhao.didi.core.iocore.interfaces.ISendable;
 import com.xuhao.didi.core.pojo.OriginalData;
+import com.xuhao.didi.socket.client.impl.client.action.ActionDispatcher;
 import com.xuhao.didi.socket.client.sdk.OkSocket;
 import com.xuhao.didi.socket.client.sdk.client.ConnectionInfo;
 import com.xuhao.didi.socket.client.sdk.client.OkSocketOptions;
@@ -38,11 +38,13 @@ import java.io.File;
 import java.nio.ByteOrder;
 
 import east.orientation.caster.R;
-import east.orientation.caster.WiFiDirectReceiver;
-import east.orientation.caster.cast.CastScreenService;
+import east.orientation.caster.cast.hotspot.WifiApManager;
+import east.orientation.caster.cast.miracast.MiracastManager;
+import east.orientation.caster.cast.service.CastScreenService;
 import east.orientation.caster.cast.CastWaiter;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.evevtbus.ConnectMessage;
+import east.orientation.caster.evevtbus.ModeMessage;
 import east.orientation.caster.local.AudioConfig;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.cast.protocol.NormalProtocol;
@@ -68,8 +70,8 @@ import static android.view.Surface.ROTATION_270;
 import static android.view.Surface.ROTATION_90;
 import static east.orientation.caster.CastApplication.getAppContext;
 import static east.orientation.caster.CastApplication.getAppInfo;
-import static east.orientation.caster.cast.CastScreenService.getProjectionManager;
-import static east.orientation.caster.cast.CastScreenService.setMediaProjection;
+import static east.orientation.caster.cast.service.CastScreenService.getProjectionManager;
+import static east.orientation.caster.cast.service.CastScreenService.setMediaProjection;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_START;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_STOP;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_TRY_START;
@@ -85,9 +87,13 @@ public class MainActivity extends AppCompatActivity {
     private static final int ACTION_DISCONNECTED = 2;
     private static final int ACTION_CONNECTED = 3;
 
+    private WifiApManager mWifiApManager;
+    private MiracastManager mMiracastManager;
+    private int mCurrenMode;
+
     private int mResultCode;// 请求录屏权限返回的 code
     private Intent mResultData;//请求录屏权限返回的 intent
-    private boolean isReset;
+    //private boolean isReset;
 
     private Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
@@ -106,6 +112,7 @@ public class MainActivity extends AppCompatActivity {
             }
         }
     };
+
     // 屏幕旋转监听
     private BroadcastReceiver mReceiver = new BroadcastReceiver() {
         @Override
@@ -152,7 +159,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSocketConnectionSuccess(ConnectionInfo info, String action) {
             super.onSocketConnectionSuccess(info, action);
-            isReset = false;
+
             // 设置连接状态
             getAppInfo().setServerConnected(true);
             // 连接成功则发送心跳
@@ -160,7 +167,6 @@ public class MainActivity extends AppCompatActivity {
             // 连接成功则发送登陆请求
             getAppInfo().getConnectionManager().send(new LoginRequest(Common.LOGIN_TYPE_TEACHER));
             Log.e("@@", "onSocketConnectionSuccess");
-
             mHandler.obtainMessage(ACTION_CONNECTED).sendToTarget();
         }
 
@@ -168,7 +174,7 @@ public class MainActivity extends AppCompatActivity {
         public void onSocketConnectionFailed(ConnectionInfo info, String action, Exception e) {
             super.onSocketConnectionFailed(info, action, e);
             Log.e("@@", "onSocketConnectionFailed" + e);
-            isReset = false;
+
             // 重置搜索广播
             resetSearcher();
         }
@@ -230,11 +236,18 @@ public class MainActivity extends AppCompatActivity {
      * 初始化
      */
     private void init() {
-        //connectToServer("192.168.0.108",10402);
-        if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_CAST_MODE,0) == 0) {
+        if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_CAST_MODE,0) == Common.CAST_MODE_WIFI) {
+            // 默认开启广播搜索
+            //connectToServer("192.168.0.108",10402);
             startSearchServer();
-        } else {
-
+        } else if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_CAST_MODE,0) == Common.CAST_MODE_MIRACAST) {
+            // 默认开启miracast
+            startMiracast();
+        } else if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_CAST_MODE,0) == Common.CAST_MODE_HOTSPOT) {
+            // 默认开启热点
+            startAp("Caster","12345678");
+            // 开启广播搜索
+            startSearchServer();
         }
 
         registerReceiver(mReceiver, new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
@@ -283,6 +296,38 @@ public class MainActivity extends AppCompatActivity {
         UpdateManager.getUpdate(UpdateManager.TYPE_APK, Common.APP_KEY);
     }
 
+    private void startMiracast() {
+        if (mMiracastManager == null)
+            mMiracastManager = new MiracastManager(getApplicationContext());
+        mMiracastManager.start();
+    }
+
+    private void stopMiracast() {
+        if (mMiracastManager == null)
+            mMiracastManager = new MiracastManager(getApplicationContext());
+        mMiracastManager.stop();
+    }
+
+    /**
+     * 开启热点
+     * @param ssid
+     * @param password
+     */
+    private void startAp(String ssid,String password) {
+        if (mWifiApManager == null)
+            mWifiApManager = new WifiApManager(getApplicationContext());
+        mWifiApManager.createHotspot(ssid,password);
+    }
+
+    /**
+     * 关闭热点
+     */
+    private void stopAp() {
+        if (mWifiApManager == null)
+            mWifiApManager = new WifiApManager(getApplicationContext());
+        mWifiApManager.stopHotspot();
+    }
+
     /**
      * start udp广播监听
      */
@@ -304,15 +349,14 @@ public class MainActivity extends AppCompatActivity {
      * 重置 搜索广播 、客户端连接状态
      */
     private void resetSearcher() {
-        if (isReset) return;
+        if (mCurrenMode == Common.CAST_MODE_MIRACAST) return;
         // 设置连接状态
-        getAppInfo().setServerConnected(false);
+        if (getAppInfo().isServerConnected()) getAppInfo().setServerConnected(false);
         // 发送停止投屏广播
-        sendBroadcast(new Intent(Common.ACTION_STOP_STREAM));
+        if (getAppInfo().isStreamRunning()) EventBus.getDefault().post(new CastMessage(MESSAGE_ACTION_STREAMING_STOP));
         // 开启接收udp广播
         stopSearchServer();
         startSearchServer();
-        isReset = true;
     }
 
     private Object mLock = new Object();
@@ -329,7 +373,6 @@ public class MainActivity extends AppCompatActivity {
         mConnectionInfo = new ConnectionInfo(ip, port);
         getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo));
         if (getAppInfo().getConnectionManager() == null) {
-
             return;
         }
 
@@ -342,6 +385,12 @@ public class MainActivity extends AppCompatActivity {
                 .setPulseFrequency(2000)// 设置心跳间隔/毫秒
                 .setPulseFeedLoseTimes(2)
                 .setReconnectionManager(new NoneReconnect())
+                .setCallbackThreadModeToken(new OkSocketOptions.ThreadModeToken() {
+                    @Override
+                    public void handleCallbackEvent(ActionDispatcher.ActionRunnable actionRunnable) {
+                        mHandler.post(actionRunnable);
+                    }
+                })
                 .build();
         getAppInfo().getConnectionManager().option(mOkOptions);
         getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
@@ -427,40 +476,6 @@ public class MainActivity extends AppCompatActivity {
         }
     }
 
-    /**
-     * 点击事件
-     *
-     * @param v
-     */
-    public void onBtnClick(View v) {
-        switch (v.getId()) {
-            case R.id.btn_castToLarge:// 投到大屏幕
-                if (getAppInfo().isServerConnected()) {
-                    CastMessage stickyEvent = EventBus.getDefault().getStickyEvent(CastMessage.class);
-                    if (stickyEvent == null || MESSAGE_STATUS_TCP_OK.equals(stickyEvent.getMessage())) {
-                        EventBus.getDefault().postSticky(new CastMessage(MESSAGE_ACTION_STREAMING_TRY_START));
-                    }
-                } else {
-                    ToastUtil.showToast("未连接服务器,请开启服务器！");
-                }
-
-
-                break;
-            case R.id.btn_castToAll:// 投到所有学生
-                ToastUtil.showToast("开发ing !");
-                break;
-            case R.id.btn_setting:// 设置
-                startActivity(new Intent(this, SettingActivity.class));
-                break;
-            case R.id.btn_castStuScreen: // 投射某个学生的画面
-                ToastUtil.showToast("开发ing !");
-                break;
-            case R.id.btn_exit:// 退出
-                getAppContext().AppExit();
-                break;
-        }
-    }
-
     @Override
     protected void onStart() {
         super.onStart();
@@ -473,8 +488,12 @@ public class MainActivity extends AppCompatActivity {
         switch (busMessage.getMessage()) {
             case MESSAGE_ACTION_STREAMING_TRY_START:
                 EventBus.getDefault().removeStickyEvent(CastMessage.class);
-                if (!getAppInfo().isWiFiConnected()) {
-                    ToastUtil.showToast("wifi未连接,请连接wifi！");
+//                if (!getAppInfo().isWiFiConnected()) {
+//                    ToastUtil.showToast("wifi未连接,请连接wifi！");
+//                    return;
+//                }
+                if (!getAppInfo().isServerConnected()) {
+                    ToastUtil.showToast("服务器尚未连接！");
                     return;
                 }
                 if (getAppInfo().isStreamRunning()) return;
@@ -512,6 +531,45 @@ public class MainActivity extends AppCompatActivity {
         connectToServer(message.getIp(), message.getPort());
     }
 
+    @Subscribe(threadMode = ThreadMode.MAIN)
+    public void onEvent(ModeMessage modeMessage) {
+        mCurrenMode = modeMessage.getMode();
+        switch (modeMessage.getMode()) {
+            case Common.CAST_MODE_WIFI:// wifi
+
+                // 关闭miracast
+                stopMiracast();
+                // 关闭热点
+                stopAp();
+                // 打开WiFi
+                getAppInfo().getWifiManager().setWifiEnabled(true);
+                // 重新开启广播搜索
+                resetSearcher();
+                break;
+            case Common.CAST_MODE_MIRACAST:// miracast
+                // 关闭热点
+                stopAp();
+                // 打开WiFi
+                getAppInfo().getWifiManager().setWifiEnabled(true);
+                //
+                if (getAppInfo().isServerConnected()) {
+                    getAppInfo().getConnectionManager().disconnect();
+                }
+                // 如果正在搜索就停止
+                stopSearchServer();
+                // 开启miracast
+                startMiracast();
+                break;
+            case Common.CAST_MODE_HOTSPOT:// hotspot
+                // 关闭miracast
+                stopMiracast();
+                // 开启热点
+                startAp("Caster","12345678");
+                // 重新开启广播搜索
+                resetSearcher();
+                break;
+        }
+    }
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
@@ -589,9 +647,11 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     protected void onDestroy() {
+        Log.e(TAG,"onDestroy");
         getAppInfo().setActivityRunning(false);
         EventBus.getDefault().unregister(this);
         unregisterReceiver(mReceiver);
+        getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
         super.onDestroy();
     }
 }

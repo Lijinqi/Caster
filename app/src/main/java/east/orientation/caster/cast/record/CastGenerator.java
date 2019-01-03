@@ -1,4 +1,4 @@
-package east.orientation.caster.cast;
+package east.orientation.caster.cast.record;
 
 import east.orientation.caster.cast.record.AACRecorder;
 import east.orientation.caster.cast.record.MP3Recorder;

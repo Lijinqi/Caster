@@ -10,6 +10,7 @@ import android.graphics.PixelFormat;
 import android.os.Binder;
 import android.os.Build;
 import android.provider.Settings;
+import android.support.annotation.MainThread;
 import android.support.annotation.RequiresApi;
 import android.util.DisplayMetrics;
 import android.util.Log;
@@ -74,7 +75,7 @@ public class WindowFloatManager {
     private static DisplayMetrics sDisplayMetrics;
     private static Context mContext;
 
-    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_cast_large, R.mipmap.ic_stu_screen, R.mipmap.ic_cast_all, R.mipmap.ic_setting, R.mipmap.ic_exit};
+    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_cast_large, R.mipmap.ic_stu_screen, R.mipmap.ic_cast_all, R.mipmap.ic_setting/*, R.mipmap.ic_exit*/};
     private int[] mIconsId;
 
     private double px;// 大屏 H / W
@@ -348,7 +349,7 @@ public class WindowFloatManager {
         SubActionButton[] subButtons = new SubActionButton[mIconsId.length];
         // 主按钮
         ImageView fabIcon = new ImageView(mContext);
-        fabIcon.setScaleType(ImageView.ScaleType.CENTER_CROP);
+        fabIcon.setScaleType(ImageView.ScaleType.CENTER);
         fabIcon.setImageDrawable(mContext.getResources().getDrawable(R.mipmap.snow));
 
         SubActionButton.Builder subBuilder = new SubActionButton.Builder(mContext);
@@ -407,6 +408,13 @@ public class WindowFloatManager {
         });
     }
 
+    public void detachFloatMenus() {
+
+        if (mFloatingActionMenu != null && mFloatingActionMenu.isOpen()) mFloatingActionMenu.close(false);
+        if (mFloatingActionButton != null) mFloatingActionButton.detach();
+        if (mSeekBar != null && mSeekBar.isAttachedToWindow()) getWindowManager().removeViewImmediate(mSeekBar);
+    }
+
     private void setItemClickListener(SubActionButton[] subButtons) {
         // 投屏
         subButtons[0].setOnClickListener(v -> {
@@ -432,7 +440,6 @@ public class WindowFloatManager {
                     getAppInfo().getConnectionManager().send(new ChageModelRequest(CastModel.Normal.getValue()));
                     if (mSeekBar != null) mSeekBar.setVisibility(View.GONE);
                 }
-
             } else {
                 ToastUtil.showToast("未连接服务器,请开启服务器！");
             }
@@ -444,15 +451,15 @@ public class WindowFloatManager {
         // 广播
         subButtons[2].setOnClickListener(v -> {
             ToastUtil.showToast("开发ing !");
-
         });
         // 设置
         subButtons[3].setOnClickListener(v -> {
             mContext.startActivity(new Intent(mContext, SettingActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         });
-        subButtons[4].setOnClickListener(v -> {
-            getAppContext().AppExit();
-        });
+        // 退出
+//        subButtons[4].setOnClickListener(v -> {
+//            getAppContext().AppExit();
+//        });
     }
 
     public static WindowManager.LayoutParams getDefaultSystemWindowParams() {

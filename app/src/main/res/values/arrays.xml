@@ -28,5 +28,6 @@
     <string-array name="mode">
         <item>Wifi模式</item>
         <item>Miracast模式</item>
+        <item>移动热点模式</item>
     </string-array>
 </resources>

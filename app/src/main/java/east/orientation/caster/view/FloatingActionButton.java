@@ -307,7 +307,10 @@ public class FloatingActionButton extends FrameLayout {
                     size,
                     size,
                     WindowManager.LayoutParams.TYPE_SYSTEM_ALERT, // z-ordering
-                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                    WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                            WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                            WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                            WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR ,
                     PixelFormat.TRANSLUCENT);
             params.format = PixelFormat.RGBA_8888;
             params.gravity = Gravity.TOP | Gravity.LEFT;

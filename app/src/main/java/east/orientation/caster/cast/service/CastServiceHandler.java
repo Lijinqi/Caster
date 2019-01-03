@@ -1,4 +1,4 @@
-package east.orientation.caster.cast;
+package east.orientation.caster.cast.service;
 
 import android.media.projection.MediaProjection;
 import android.os.Handler;
@@ -6,12 +6,9 @@ import android.os.Looper;
 import android.os.Message;
 import android.util.Log;
 
-import east.orientation.caster.cast.CastGenerator;
+import east.orientation.caster.cast.record.CastGenerator;
 
-import static android.view.Surface.ROTATION_0;
-import static android.view.Surface.ROTATION_180;
 import static east.orientation.caster.CastApplication.getAppInfo;
-import static east.orientation.caster.cast.CastScreenService.getMediaProjection;
 
 /**
  * Created by ljq on 2018/1/9.
@@ -59,7 +56,7 @@ public class CastServiceHandler extends Handler {
                 //removeMessages(HANDLER_DETECT_ROTATION);
                 removeMessages(HANDLER_STOP_STREAMING);
                 mCastGenerator.stop();
-                final MediaProjection mediaProjection = getMediaProjection();
+                final MediaProjection mediaProjection = CastScreenService.getMediaProjection();
                 if (mediaProjection != null) mediaProjection.stop();
                 getAppInfo().setStreamRunning(false);
                 break;

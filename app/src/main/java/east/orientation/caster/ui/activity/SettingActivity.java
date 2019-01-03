@@ -1,6 +1,5 @@
 package east.orientation.caster.ui.activity;
 
-import android.content.DialogInterface;
 import android.os.Bundle;
 import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
@@ -11,8 +10,11 @@ import android.view.View;
 import android.widget.EditText;
 import android.widget.TextView;
 
+import org.greenrobot.eventbus.EventBus;
+
 import de.hdodenhof.circleimageview.CircleImageView;
 import east.orientation.caster.R;
+import east.orientation.caster.evevtbus.ModeMessage;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.util.SharePreferenceUtil;
 import east.orientation.caster.util.ToastUtil;
@@ -129,11 +131,38 @@ public class SettingActivity extends AppCompatActivity {
                             String mode = getResources().getStringArray(R.array.mode)[which];
                             if (!TextUtils.isEmpty(mode)) {
                                 mTextMode.setText(mode);
+                                switchMode(which);
                                 SharePreferenceUtil.put(getApplicationContext(),Common.KEY_CAST_MODE,which);
                             }
                         }).show();
                 break;
         }
+    }
+
+    private void switchMode(int mode) {
+        switch (mode) {
+            case Common.CAST_MODE_WIFI:// wifi
+                onlyWifiMode();
+                break;
+            case Common.CAST_MODE_MIRACAST:// miracast
+                onlyMiracastMode();
+                break;
+            case Common.CAST_MODE_HOTSPOT:// hotspot
+                onlyHotspot();
+                break;
+        }
+    }
+
+    private void onlyWifiMode() {
+        EventBus.getDefault().post(new ModeMessage(Common.CAST_MODE_WIFI));
+    }
+
+    private void onlyMiracastMode() {
+        EventBus.getDefault().post(new ModeMessage(Common.CAST_MODE_MIRACAST));
+    }
+
+    private void onlyHotspot() {
+        EventBus.getDefault().post(new ModeMessage(Common.CAST_MODE_HOTSPOT));
     }
 
     @Override

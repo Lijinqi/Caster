@@ -6,10 +6,9 @@ import android.net.wifi.WifiManager;
 
 import com.xuhao.didi.socket.client.sdk.client.connection.IConnectionManager;
 
-import java.util.concurrent.ConcurrentLinkedDeque;
 import java.util.concurrent.LinkedBlockingQueue;
 
-import east.orientation.caster.cast.CastScreenService;
+import east.orientation.caster.cast.service.CastScreenService;
 
 
 /**
@@ -95,5 +94,4 @@ public class AppInfo {
     public boolean isWiFiConnected() {
         return mWifiManager.getConnectionInfo().getIpAddress() != 0;
     }
-
 }

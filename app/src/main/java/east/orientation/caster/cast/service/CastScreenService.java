@@ -1,4 +1,4 @@
-package east.orientation.caster.cast;
+package east.orientation.caster.cast.service;
 
 import android.app.Notification;
 import android.app.NotificationChannel;
@@ -11,15 +11,11 @@ import android.content.Intent;
 import android.content.IntentFilter;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
-import android.net.NetworkInfo;
-import android.net.wifi.WifiInfo;
-import android.net.wifi.WifiManager;
 import android.os.Build;
 import android.os.Handler;
 import android.os.HandlerThread;
 import android.os.IBinder;
 import android.os.Looper;
-import android.os.Parcelable;
 import android.os.PowerManager;
 import android.os.Process;
 import android.support.annotation.Nullable;
@@ -34,8 +30,11 @@ import east.orientation.caster.R;
 
 import east.orientation.caster.cast.request.SelectRectRequest;
 import east.orientation.caster.cast.request.StopCastRequest;
+import east.orientation.caster.cast.sender.CastAudioSender;
+import east.orientation.caster.cast.sender.CastFrameSender;
 import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.Common;
+import east.orientation.caster.local.lifecycle.MobclickAgent;
 import east.orientation.caster.ui.activity.MainActivity;
 import east.orientation.caster.util.ToastUtil;
 import east.orientation.caster.view.WindowFloatManager;
@@ -79,7 +78,7 @@ public class CastScreenService extends Service {
 
     private BroadcastReceiver mLocalNotificationReceiver;
 
-    private BroadcastReceiver mBroadcastReceiver;
+    //private BroadcastReceiver mBroadcastReceiver;
 
     private boolean isServicePrepared;
 
@@ -176,78 +175,78 @@ public class CastScreenService extends Service {
         screenOnOffAndWiFiFilter.addAction(WIFI_STATE_CHANGED_ACTION);
         screenOnOffAndWiFiFilter.addAction(NETWORK_STATE_CHANGED_ACTION);
 
-        mBroadcastReceiver = new BroadcastReceiver() {
-            @Override
-            public void onReceive(Context context, Intent intent) {
-                final String action = intent.getAction();
-                switch (action) {
-                    case ACTION_SCREEN_OFF:
-                        serviceStopStreaming();
-                        break;
-                    case WIFI_STATE_CHANGED_ACTION:
-                        //获取当前的wifi状态int类型数据
-                        int mWifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, 0);
-                        switch (mWifiState) {
-                            case WifiManager.WIFI_STATE_ENABLED:
-                                //已打开
-                                Log.e(TAG, "已打开");
-                                break;
-                            case WifiManager.WIFI_STATE_ENABLING:
-                                //打开中
-                                Log.e(TAG, "打开中");
-                                if (getAppInfo().getConnectionManager() != null) {
-                                    getAppInfo().getConnectionManager().connect();
-                                }
-                                break;
-                            case WifiManager.WIFI_STATE_DISABLED:
-                                //已关闭
-                                Log.e(TAG, "已关闭");
-                                ToastUtil.showToast("WIFI未连接！");
-                                if (getAppInfo().isStreamRunning()) {
-                                    serviceStopStreaming();
-                                }
-                                break;
-                            case WifiManager.WIFI_STATE_DISABLING:
-                                Log.e(TAG, "关闭中");
-                                //关闭中
-                                if (getAppInfo().getConnectionManager() != null) {
-                                    getAppInfo().getConnectionManager().disconnect();
-                                }
-                                break;
-                            case WifiManager.WIFI_STATE_UNKNOWN:
-                                //未知
-
-                                break;
-                        }
-                        break;
-
-                    case NETWORK_STATE_CHANGED_ACTION:
-
-                        Parcelable parcelableExtra = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
-                        WifiInfo wifiInfo = intent.getParcelableExtra(WifiManager.EXTRA_WIFI_INFO);
-                        String bssid = intent.getStringExtra(WifiManager.EXTRA_BSSID);
-                        if (null != parcelableExtra) {
-                            NetworkInfo networkInfo = (NetworkInfo) parcelableExtra;
-                            NetworkInfo.State state = networkInfo.getState();
-
-                            if (state == NetworkInfo.State.DISCONNECTED) {
-                                if (getAppInfo().getConnectionManager() != null && getAppInfo().getConnectionManager().isConnect() && !getAppInfo().getConnectionManager().isDisconnecting()) {
-                                    getAppInfo().getConnectionManager().disconnect();
-                                    Log.e(TAG, "disconnect--");
-                                }
-                            } else if (state == NetworkInfo.State.CONNECTED) {
-//                                if (getAppInfo().getConnectionManager()!=null && !getAppInfo().getConnectionManager().isConnect()){
+//        mBroadcastReceiver = new BroadcastReceiver() {
+//            @Override
+//            public void onReceive(Context context, Intent intent) {
+//                final String action = intent.getAction();
+//                switch (action) {
+//                    case ACTION_SCREEN_OFF:
+//                        serviceStopStreaming();
+//                        break;
+//                    case WIFI_STATE_CHANGED_ACTION:
+//                        //获取当前的wifi状态int类型数据
+//                        int mWifiState = intent.getIntExtra(WifiManager.EXTRA_WIFI_STATE, 0);
+//                        switch (mWifiState) {
+//                            case WifiManager.WIFI_STATE_ENABLED:
+//                                //已打开
+//                                Log.e(TAG, "已打开");
+//                                break;
+//                            case WifiManager.WIFI_STATE_ENABLING:
+//                                //打开中
+//                                Log.e(TAG, "打开中");
+//                                if (getAppInfo().getConnectionManager() != null) {
 //                                    getAppInfo().getConnectionManager().connect();
-//                                    Log.e(TAG,"connect--");
 //                                }
-                            }
-                        }
-
-                        break;
-                }
-            }
-        };
-        registerReceiver(mBroadcastReceiver, screenOnOffAndWiFiFilter);
+//                                break;
+//                            case WifiManager.WIFI_STATE_DISABLED:
+//                                //已关闭
+//                                Log.e(TAG, "已关闭");
+//                                ToastUtil.showToast("WIFI未连接！");
+//                                if (getAppInfo().isStreamRunning()) {
+//                                    serviceStopStreaming();
+//                                }
+//                                break;
+//                            case WifiManager.WIFI_STATE_DISABLING:
+//                                Log.e(TAG, "关闭中");
+//                                //关闭中
+//                                if (getAppInfo().getConnectionManager() != null) {
+//                                    getAppInfo().getConnectionManager().disconnect();
+//                                }
+//                                break;
+//                            case WifiManager.WIFI_STATE_UNKNOWN:
+//                                //未知
+//
+//                                break;
+//                        }
+//                        break;
+//
+//                    case NETWORK_STATE_CHANGED_ACTION:
+//
+//                        Parcelable parcelableExtra = intent.getParcelableExtra(WifiManager.EXTRA_NETWORK_INFO);
+//                        WifiInfo wifiInfo = intent.getParcelableExtra(WifiManager.EXTRA_WIFI_INFO);
+//                        String bssid = intent.getStringExtra(WifiManager.EXTRA_BSSID);
+//                        if (null != parcelableExtra) {
+//                            NetworkInfo networkInfo = (NetworkInfo) parcelableExtra;
+//                            NetworkInfo.State state = networkInfo.getState();
+//
+//                            if (state == NetworkInfo.State.DISCONNECTED) {
+//                                if (getAppInfo().getConnectionManager() != null && getAppInfo().getConnectionManager().isConnect() && !getAppInfo().getConnectionManager().isDisconnecting()) {
+//                                    getAppInfo().getConnectionManager().disconnect();
+//                                    Log.e(TAG, "disconnect--");
+//                                }
+//                            } else if (state == NetworkInfo.State.CONNECTED) {
+////                                if (getAppInfo().getConnectionManager()!=null && !getAppInfo().getConnectionManager().isConnect()){
+////                                    getAppInfo().getConnectionManager().connect();
+////                                    Log.e(TAG,"connect--");
+////                                }
+//                            }
+//                        }
+//
+//                        break;
+//                }
+//            }
+//        };
+//        registerReceiver(mBroadcastReceiver, screenOnOffAndWiFiFilter);
 
         EventBus.getDefault().register(this);
 
@@ -264,8 +263,7 @@ public class CastScreenService extends Service {
     }
 
     public static Intent getStartIntent(Context context) {
-        return new Intent(context, CastScreenService.class)
-                .putExtra(Common.EXTRA_DATA, Common.SERVICE_MESSAGE_PREPARE_STREAMING);
+        return new Intent(context, CastScreenService.class);
     }
 
     @Override
@@ -437,29 +435,35 @@ public class CastScreenService extends Service {
 
     @Override
     public void onDestroy() {
+        Log.d("tag","service destroy");
+        // 移除通知
         stopForeground(true);
-
-        unregisterReceiver(mBroadcastReceiver);
-        unregisterReceiver(mLocalNotificationReceiver);
-        if (mMediaProjection != null) {
-            mMediaProjection.unregisterCallback(mProjectionCallback);
-            mMediaProjection.stop();
-        }
-        mHandlerThread.quit();
-
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             mNotificationManager.deleteNotificationChannel(Common.NOTIFICATION_CHANNEL_ID);
         }
-
-        CastFrameSender.stop();
-
+        // detach 悬浮球
+        WindowFloatManager.getInstance().detachFloatMenus();
+        // 释放MultiCastLock
+        getAppInfo().getMulticastLock().release();
+        // 注销通知广播
+        unregisterReceiver(mLocalNotificationReceiver);
+        // 停止录屏
+        serviceStopStreaming();
+        if (mMediaProjection != null) {
+            mMediaProjection.unregisterCallback(mProjectionCallback);
+            mMediaProjection.stop();
+            mMediaProjection = null;
+        }
+        mMediaProjectionManager = null;
+        // 退出线程
+        mHandlerThread.quit();
+        // 断开投屏网络连接
         if (getAppInfo().getConnectionManager() != null) {
             getAppInfo().getConnectionManager().disconnect();
         }
-
+        // 注销 eventbus
         EventBus.getDefault().unregister(this);
         // 退出应用
-        //CastApplication.getAppContext().AppExit();
-        super.onDestroy();
+        MobclickAgent.exit();
     }
 }

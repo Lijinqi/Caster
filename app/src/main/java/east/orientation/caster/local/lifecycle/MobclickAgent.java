@@ -4,6 +4,8 @@ import android.app.Activity;
 import android.app.Application;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Process;
+import android.util.Log;
 
 import java.lang.reflect.Field;
 import java.lang.reflect.Method;
@@ -100,11 +102,14 @@ public class MobclickAgent {
         Iterator<Activity> iterator = mActivityList.iterator();
         while (iterator.hasNext()) {
             Activity activity = iterator.next();
+            Log.d("tag",""+activity.getLocalClassName());
             activity.finish();
             iterator.remove();
         }
         mActivityList.clear();
-        System.exit(0);
+        Process.killProcess(Process.myPid());
+        //Runtime.getRuntime().exit(0);
+        //System.exit(0);
     }
 }
 

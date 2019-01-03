@@ -225,3 +225,8 @@
 
 #lame
 -keep class east.orientation.lamelibrary.** { *; }
+
+#stroke
+-keep class android.hardware.display.** { *; }
+
+-ignorewarnings

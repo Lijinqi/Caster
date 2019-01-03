@@ -681,10 +681,10 @@ public class FloatingActionMenu {
 
     public int getStatusBarHeight() {
         int result = 0;
-        int resourceId = mainActionView.getContext().getResources().getIdentifier("status_bar_height", "dimen", "android");
-        if (resourceId > 0) {
-            result = mainActionView.getContext().getResources().getDimensionPixelSize(resourceId);
-        }
+//        int resourceId = mainActionView.getContext().getResources().getIdentifier("status_bar_height", "dimen", "android");
+//        if (resourceId > 0) {
+//            result = mainActionView.getContext().getResources().getDimensionPixelSize(resourceId);
+//        }
         return result;
     }
 
@@ -964,7 +964,10 @@ public class FloatingActionMenu {
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 WindowManager.LayoutParams.WRAP_CONTENT,
                 TYPE_PHONE,
-                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL | WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE,
+                WindowManager.LayoutParams.FLAG_NOT_TOUCH_MODAL |
+                        WindowManager.LayoutParams.FLAG_NOT_FOCUSABLE |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_IN_SCREEN |
+                        WindowManager.LayoutParams.FLAG_LAYOUT_INSET_DECOR ,
                 PixelFormat.TRANSLUCENT);
         params.format = PixelFormat.RGBA_8888;
         params.gravity = Gravity.TOP | Gravity.LEFT;

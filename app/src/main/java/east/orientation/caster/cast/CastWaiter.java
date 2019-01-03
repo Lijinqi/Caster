@@ -41,7 +41,7 @@ public class CastWaiter {
     }
     //============================================
 
-    private boolean isSearching = false;
+    private boolean isStop = true;
 
     private static Object mLock = new Object();
 
@@ -82,23 +82,23 @@ public class CastWaiter {
                 byte[] revBytes = new byte[24];
                 DatagramPacket packet = new DatagramPacket(revBytes, revBytes.length, mSocketAddress);
 
-                isSearching = true;
-
                 mMulticastSocket.receive(packet);
                 parserData(packet);
 
             } catch (Exception e) {
                 e.printStackTrace();
-                isSearching = false;
-                Log.e("@@", "-receive err-" + e);
-                CastWaiter.this.stop();
-                new Timer().schedule(new TimerTask() {
-                    @Override
-                    public void run() {
 
-                        CastWaiter.this.start();
-                    }
-                }, 1000);
+                Log.e("@@", "-receive err-" + e);
+                if (!isStop) {
+                    CastWaiter.this.stop();
+                    CastWaiter.this.start();
+                    new Timer().schedule(new TimerTask() {
+                        @Override
+                        public void run() {
+                            //CastWaiter.this.start();
+                        }
+                    }, 1000);
+                }
             }
         }
     }
@@ -121,12 +121,12 @@ public class CastWaiter {
         String Head = new String(head, 0, head.length);
         if (Len == 20 && Common.HEAD.equals(Head)) {
             mSearchListener.onSearchFinished(packet.getAddress().getHostAddress(), Port);
-            isSearching = false;
         }
     }
 
     public void start() {
         synchronized (mLock) {
+            isStop = false;
             if (mSearchThread != null) return;
             mSearchThread = new SearchThread();
             mSearchThread.start();
@@ -136,15 +136,17 @@ public class CastWaiter {
 
     public void stop() {
         synchronized (mLock) {
-            isSearching = false;
-
             try {
-                mMulticastSocket.leaveGroup(mSocketAddress, mNetworkInterface);
-                mMulticastSocket.close();
-                mMulticastSocket = null;
-                //
-                mSearchThread.interrupt();
-                mSearchThread = null;
+                isStop = true;
+                if (mMulticastSocket != null) {
+                    mMulticastSocket.leaveGroup(mSocketAddress, mNetworkInterface);
+                    mMulticastSocket.close();
+                    mMulticastSocket = null;
+                }
+                if (mSearchThread != null) {
+                    mSearchThread.interrupt();
+                    mSearchThread = null;
+                }
             } catch (Exception e) {
                 e.printStackTrace();
             }

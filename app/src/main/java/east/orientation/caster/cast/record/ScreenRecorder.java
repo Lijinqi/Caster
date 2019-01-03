@@ -13,7 +13,7 @@ import android.view.Surface;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import east.orientation.caster.cast.CastScreenService;
+import east.orientation.caster.cast.service.CastScreenService;
 import east.orientation.caster.local.Common;
 import east.orientation.caster.local.VideoConfig;
 import east.orientation.caster.util.SharePreferenceUtil;
@@ -135,10 +135,14 @@ public class ScreenRecorder {
             Log.e(TAG, "Failed to initial mVideoCodec, e: " + e);
             stop();
         }
-
-        mVirtualDisplay = mediaProjection.createVirtualDisplay("Recording Display", VideoConfig.RESOLUTION_OPTIONS[0][mIndexSize],
-                VideoConfig.RESOLUTION_OPTIONS[1][mIndexSize], VideoConfig.DEFAULT_SCREEN_DPI, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC, mInputSurface, null, null);
         DisplayManager displayManager = (DisplayManager) getAppContext().getSystemService(Context.DISPLAY_SERVICE);
+
+        mVirtualDisplay = displayManager.createVirtualDisplay("Recording",VideoConfig.RESOLUTION_OPTIONS[0][mIndexSize],
+                VideoConfig.RESOLUTION_OPTIONS[1][mIndexSize], VideoConfig.DEFAULT_SCREEN_DPI,mInputSurface,DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+//        mVirtualDisplay = mediaProjection.createVirtualDisplay("Recording Display", VideoConfig.RESOLUTION_OPTIONS[0][mIndexSize],
+//                VideoConfig.RESOLUTION_OPTIONS[1][mIndexSize], VideoConfig.DEFAULT_SCREEN_DPI, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC, mInputSurface, null, null);
+
+
     }
 
     /**

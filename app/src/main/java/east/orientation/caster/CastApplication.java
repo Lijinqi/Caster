@@ -1,18 +1,18 @@
 package east.orientation.caster;
 
 import android.app.Application;
-import android.content.ComponentName;
-import android.content.Intent;
 import android.content.IntentFilter;
-import android.content.pm.PackageManager;
-import android.net.wifi.WifiManager;
+import android.os.Process;
 import android.util.Log;
 
 
-import java.io.File;
+import com.xuhao.didi.socket.client.sdk.OkSocket;
 
-import east.orientation.caster.cast.CastScreenService;
+import org.greenrobot.eventbus.EventBus;
 
+import east.orientation.caster.cast.service.CastScreenService;
+
+import east.orientation.caster.evevtbus.CastMessage;
 import east.orientation.caster.local.AppInfo;
 import east.orientation.caster.local.lifecycle.MobclickAgent;
 import east.orientation.caster.cast.request.LogoutRequest;
@@ -59,21 +59,22 @@ public class CastApplication extends Application {
     }
 
     public void AppExit() {
-        Log.e("APP", "AppExit");
+        EventBus.getDefault().post(new CastMessage(CastMessage.MESSAGE_ACTION_STREAMING_STOP));
         if (sAppInfo.getConnectionManager() != null) {
             // 发送登出服务器请求
             sAppInfo.getConnectionManager().send(new LogoutRequest());
             // 发送关闭大屏显示请求
             sAppInfo.getConnectionManager().send(new StopCastRequest());
         }
-
         // 注销广播
         sAppInstance.unregisterReceiver(mExitBroadcastReceiver);
+        // 断开更新网络连接
+        SocketManager.getInstance().disConnect();
         // 停止服务
         if (sAppInfo.getCastScreenService() != null) {
-            sAppInfo.getCastScreenService().onDestroy();
+            sAppInfo.getCastScreenService().stopSelf();
         }
+        //sAppInfo.setConnectionManager(null);
 
-        MobclickAgent.exit();
     }
 }

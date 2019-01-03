@@ -59,17 +59,13 @@ public class Common {
     public static final String NOTIFICATION_CHANNEL_ID = "com.lijinqi.castscreenservice.NOTIFICATION_CHANNEL_01";
     public static final int NOTIFICATION_START_STREAMING = 10;
     public static final int NOTIFICATION_STOP_STREAMING = 11;
-
-    public static final String EXTRA_DATA = "EXTRA_DATA";
-
-    public static final String SERVICE_MESSAGE_PREPARE_STREAMING = "SERVICE_MESSAGE_PREPARE_STREAMING";
-
     public static final String ACTION_START_STREAM = "ACTION_START_STREAM";
     public static final String ACTION_STOP_STREAM = "ACTION_STOP_STREAM";
     public static final String ACTION_EXIT = "ACTION_EXIT";
 
-    public static final int CAST_MODE_MIRACAST = 0;
-    public static final int CAST_MODE_WIFI = 1;
+    public static final int CAST_MODE_WIFI = 0;// WiFi 模式 设备与大屏在同一局域网可用
+    public static final int CAST_MODE_MIRACAST = 1;// miracast 模式 配合dongle使用
+    public static final int CAST_MODE_HOTSPOT = 2;// 热点 模式 启动热点当做AP 无需路由器
 
     /**********************************************************/
     /**SharePreference存储相关常量**/

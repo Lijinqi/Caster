@@ -32,7 +32,7 @@
         android:theme="@style/AppTheme"
         android:resizeableActivity="false">
         <activity android:name=".ui.activity.MainActivity"
-            android:launchMode="singleInstance"
+            android:launchMode="singleTask"
             android:theme="@style/MainTheme"
             android:configChanges="keyboardHidden|orientation|screenSize"
             >
@@ -55,7 +55,7 @@
                 android:resource="@xml/file_paths"/>
         </provider>
         <!--投屏 service-->
-        <service android:name=".cast.CastScreenService" android:exported="false"/>
+        <service android:name=".cast.service.CastScreenService" android:exported="false"/>
 </application>
 
 </manifest>

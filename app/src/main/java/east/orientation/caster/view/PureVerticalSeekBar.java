@@ -12,6 +12,7 @@ import android.graphics.Rect;
 import android.graphics.RectF;
 import android.graphics.Shader;
 import android.util.AttributeSet;
+import android.util.Log;
 import android.view.MotionEvent;
 import android.view.View;
 
@@ -262,8 +263,15 @@ public class PureVerticalSeekBar extends View {
             return true;
         }
         this.y = event.getY();
-        progress = y / sHeight * 100;
+        int[] location = new  int[2] ;
+        getLocationInWindow(location); //获取在当前窗口内的绝对坐标
+        getLocationOnScreen(location);//获取在整个屏幕内的绝对坐标
 
+        Log.e(TAG,"event : locationX: "+location[0]+" locationY: "+location[1]);
+
+        float pY = event.getRawY() - location[1];
+
+        progress = y / sHeight * 100;
         switch (event.getAction()) {
             case MotionEvent.ACTION_DOWN:
                 onSlideProgress(MotionEvent.ACTION_DOWN, progress);
@@ -307,6 +315,7 @@ public class PureVerticalSeekBar extends View {
                 if (onSlideChangeListener != null) {
                     onSlideChangeListener.onSlideStopTouch(this, progress);
                 }
+                setProgress(progress);
                 break;
             case MotionEvent.ACTION_MOVE:
                 if (onSlideChangeListener != null) {
@@ -316,6 +325,10 @@ public class PureVerticalSeekBar extends View {
                 this.invalidate();
                 break;
             case MotionEvent.ACTION_DOWN:
+                if (onSlideChangeListener != null) {
+                    onSlideChangeListener.OnSlideChangeListener(this, progress);
+                }
+                setProgress(progress);
                 this.invalidate();
                 break;
         }

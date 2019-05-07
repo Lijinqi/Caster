@@ -6,23 +6,31 @@ import android.content.BroadcastReceiver;
 import android.content.Context;
 import android.content.Intent;
 import android.content.IntentFilter;
+import android.graphics.Color;
+import android.hardware.input.InputManager;
+import android.inputmethodservice.InputMethodService;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.net.wifi.WifiManager;
 import android.os.Handler;
 import android.os.Looper;
 import android.os.Message;
+import android.os.SystemClock;
 import android.support.v7.app.AppCompatActivity;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.view.WindowManager;
+import android.widget.FrameLayout;
+import android.widget.ImageView;
+import android.widget.TextView;
 import android.widget.Toast;
 
 
 import com.xuhao.didi.core.iocore.interfaces.IPulseSendable;
 import com.xuhao.didi.core.iocore.interfaces.ISendable;
 import com.xuhao.didi.core.pojo.OriginalData;
+import com.xuhao.didi.core.utils.SLog;
 import com.xuhao.didi.socket.client.impl.client.action.ActionDispatcher;
 import com.xuhao.didi.socket.client.sdk.OkSocket;
 import com.xuhao.didi.socket.client.sdk.client.ConnectionInfo;
@@ -37,7 +45,11 @@ import org.greenrobot.eventbus.ThreadMode;
 import java.io.File;
 import java.nio.ByteOrder;
 
+
+import javax.crypto.AEADBadTagException;
+
 import east.orientation.caster.R;
+import east.orientation.caster.cast.PcController;
 import east.orientation.caster.cast.hotspot.WifiApManager;
 import east.orientation.caster.cast.miracast.MiracastManager;
 import east.orientation.caster.cast.service.CastScreenService;
@@ -54,13 +66,13 @@ import east.orientation.caster.cast.request.Pluse;
 import east.orientation.caster.cast.request.SelectRectRequest;
 import east.orientation.caster.cast.request.SelectRectResponse;
 import east.orientation.caster.cast.request.StartCastRequest;
-import east.orientation.caster.socket.SocketManager;
-import east.orientation.caster.socket.UpdateManager;
 import east.orientation.caster.util.BytesUtils;
 import east.orientation.caster.util.CommonUtil;
+import east.orientation.caster.util.RxShellTool;
 import east.orientation.caster.util.SharePreferenceUtil;
 import east.orientation.caster.util.ToastUtil;
 import east.orientation.caster.view.WindowFloatManager;
+
 import permissions.dispatcher.NeedsPermission;
 import permissions.dispatcher.RuntimePermissions;
 
@@ -68,10 +80,12 @@ import static android.view.Surface.ROTATION_0;
 import static android.view.Surface.ROTATION_180;
 import static android.view.Surface.ROTATION_270;
 import static android.view.Surface.ROTATION_90;
-import static east.orientation.caster.CastApplication.getAppContext;
+
 import static east.orientation.caster.CastApplication.getAppInfo;
 import static east.orientation.caster.cast.service.CastScreenService.getProjectionManager;
 import static east.orientation.caster.cast.service.CastScreenService.setMediaProjection;
+
+
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_START;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_STOP;
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_ACTION_STREAMING_TRY_START;
@@ -79,10 +93,13 @@ import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_CAST_G
 
 import static east.orientation.caster.evevtbus.CastMessage.MESSAGE_STATUS_TCP_OK;
 import static east.orientation.caster.local.VideoConfig.REQUEST_CODE_SCREEN_CAPTURE;
+import static east.orientation.caster.local.VideoConfig.px;
+
+
 
 @RuntimePermissions
 public class MainActivity extends AppCompatActivity {
-    private static final String TAG = "MainActivity";
+    private static final String TAG = "CastActivity";
     private static final int ACTION_SHUTDOWN = 1;
     private static final int ACTION_DISCONNECTED = 2;
     private static final int ACTION_CONNECTED = 3;
@@ -94,6 +111,8 @@ public class MainActivity extends AppCompatActivity {
     private int mResultCode;// 请求录屏权限返回的 code
     private Intent mResultData;//请求录屏权限返回的 intent
     //private boolean isReset;
+
+    private boolean isRelease;
 
     private Handler mHandler = new Handler(Looper.getMainLooper()) {
         @Override
@@ -129,7 +148,7 @@ public class MainActivity extends AppCompatActivity {
         }
     };
 
-    private ConnectionInfo mConnectionInfo;
+    //private ConnectionInfo mConnectionInfo;
     private OkSocketOptions mOkOptions;
     private SocketActionAdapter mSocketActionAdapter = new SocketActionAdapter() {
         @Override
@@ -141,7 +160,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSocketIOThreadShutdown(String action, Exception e) {
             super.onSocketIOThreadShutdown(action, e);
-            Log.e("@@", "onSocketIOThreadShutdown" + e);
+            Log.e(TAG, "onSocketIOThreadShutdown" + e);
             // 重置搜索广播
             resetSearcher();
             mHandler.obtainMessage(ACTION_SHUTDOWN).sendToTarget();
@@ -151,7 +170,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSocketDisconnection(ConnectionInfo info, String action, Exception e) {
             super.onSocketDisconnection(info, action, e);
-            Log.e("@@", "onSocketDisconnection" + e);
+            Log.e(TAG, "onSocketDisconnection" + e);
             // 重置搜索广播
             resetSearcher();
         }
@@ -163,17 +182,17 @@ public class MainActivity extends AppCompatActivity {
             // 设置连接状态
             getAppInfo().setServerConnected(true);
             // 连接成功则发送心跳
-            getAppInfo().getConnectionManager().getPulseManager().setPulseSendable(new Pluse(1)).pulse();
+            //getAppInfo().getConnectionManager().getPulseManager().setPulseSendable(new Pluse(1)).pulse();
             // 连接成功则发送登陆请求
             getAppInfo().getConnectionManager().send(new LoginRequest(Common.LOGIN_TYPE_TEACHER));
-            Log.e("@@", "onSocketConnectionSuccess");
+            Log.e(TAG, "onSocketConnectionSuccess"+info.getIp());
             mHandler.obtainMessage(ACTION_CONNECTED).sendToTarget();
         }
 
         @Override
         public void onSocketConnectionFailed(ConnectionInfo info, String action, Exception e) {
             super.onSocketConnectionFailed(info, action, e);
-            Log.e("@@", "onSocketConnectionFailed" + e);
+            Log.e(TAG, "onSocketConnectionFailed" + e);
 
             // 重置搜索广播
             resetSearcher();
@@ -190,7 +209,7 @@ public class MainActivity extends AppCompatActivity {
         @Override
         public void onSocketWriteResponse(ConnectionInfo info, String action, ISendable data) {
             super.onSocketWriteResponse(info, action, data);
-            //Log.e(TAG,"发送 ："+data.parse().length);
+            //Log.e(TAG,"LENGTH: "+data.parse().length +"TIME: "+ SystemClock.uptimeMillis());
         }
 
         @Override
@@ -203,8 +222,14 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onNewIntent(Intent intent) {
         super.onNewIntent(intent);
-        Log.e(TAG, "Caster onNewIntent");
-        onBackPressed();
+        // runtime permission
+        MainActivityPermissionsDispatcher.showSystemWindowWithPermissionCheck(this);
+        getAppInfo().getConnectionManager().registerReceiver(mSocketActionAdapter);
+        getAppInfo().getConnectionManager().connect();
+        if (!EventBus.getDefault().isRegistered(this)) {
+            EventBus.getDefault().register(this);
+        }
+        isRelease = false;
     }
 
     @Override
@@ -238,7 +263,6 @@ public class MainActivity extends AppCompatActivity {
     private void init() {
         if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_CAST_MODE,0) == Common.CAST_MODE_WIFI) {
             // 默认开启广播搜索
-            //connectToServer("192.168.0.108",10402);
             startSearchServer();
         } else if (SharePreferenceUtil.get(getApplicationContext(),Common.KEY_CAST_MODE,0) == Common.CAST_MODE_MIRACAST) {
             // 默认开启miracast
@@ -251,49 +275,8 @@ public class MainActivity extends AppCompatActivity {
         }
 
         registerReceiver(mReceiver, new IntentFilter(Intent.ACTION_CONFIGURATION_CHANGED));
-        // 检查更新
-        checkUpdate();
-    }
 
-    private void checkUpdate() {
-        Log.i(TAG, "checkUpdate " + SocketManager.getInstance().isConnect());
-        UpdateManager.init(getApplicationContext(), new UpdateManager.UpdateAdapter() {
-            @Override
-            public void update(UpdateManager.Apk apk) {
-                Log.d(TAG, "update: " + apk);
-                int localVersion = CommonUtil.getAppVersionCode(getApplicationContext());
-                if (localVersion > 0 && localVersion < apk.getVersionCode())
-                    UpdateManager.download(UpdateManager.TYPE_APK, apk.getApkName(), 0, UpdateManager.DEFAULT_PACKAGE_SIZE);
-            }
-
-            @Override
-            public void noUpdate() {
-                Log.d(TAG, "no update");
-            }
-        }, new UpdateManager.DownloadAdapter() {
-            @Override
-            public void start(String apkName) {
-                Log.d(TAG, "download start: " + apkName);
-                UpdateManager.createNotification(getApplicationContext());
-            }
-
-            @Override
-            public void progress(long progress, long totalSize) {
-                Log.d(TAG, "download progress: " + progress + "/" + totalSize);
-                UpdateManager.updateNotification(progress, totalSize);
-            }
-
-            @Override
-            public void finish(final String apkPath) {
-                Log.d(TAG, "download end: " + apkPath);
-                UpdateManager.finishNotification(getApplicationContext(), new File(apkPath));
-
-                UpdateManager.install(new File(apkPath), getApplicationContext());
-
-                UpdateManager.onCancel();
-            }
-        });
-        UpdateManager.getUpdate(UpdateManager.TYPE_APK, Common.APP_KEY);
+        //RxShellTool.execCmd("settings put secure default_input_method com.tencent.qqpinyin/.QQPYInputMethodService",false);
     }
 
     private void startMiracast() {
@@ -332,10 +315,11 @@ public class MainActivity extends AppCompatActivity {
      * start udp广播监听
      */
     private void startSearchServer() {
-        CastWaiter.getInstance().setSearchListener((ip, port) -> {
-            EventBus.getDefault().post(new ConnectMessage(ip, port));
-        });
-        CastWaiter.getInstance().start();
+        connectToServer("192.168.0.108",10402);
+//        CastWaiter.getInstance().setSearchListener((ip, port) -> {
+//            EventBus.getDefault().post(new ConnectMessage(ip, port));
+//        });
+//        CastWaiter.getInstance().start();
     }
 
     /**
@@ -349,6 +333,7 @@ public class MainActivity extends AppCompatActivity {
      * 重置 搜索广播 、客户端连接状态
      */
     private void resetSearcher() {
+        if (isRelease) return;
         if (mCurrenMode == Common.CAST_MODE_MIRACAST) return;
         // 设置连接状态
         if (getAppInfo().isServerConnected()) getAppInfo().setServerConnected(false);
@@ -370,19 +355,18 @@ public class MainActivity extends AppCompatActivity {
         if (getAppInfo().getConnectionManager() != null && getAppInfo().getConnectionManager().isConnect()) {
             return;
         }
-        mConnectionInfo = new ConnectionInfo(ip, port);
-        getAppInfo().setConnectionManager(OkSocket.open(mConnectionInfo));
+
+        getAppInfo().setConnectionManager(OkSocket.open(ip,port));
         if (getAppInfo().getConnectionManager() == null) {
             return;
         }
-
         mOkOptions = getAppInfo().getConnectionManager().getOption();
 
         mOkOptions = new OkSocketOptions.Builder(OkSocketOptions.getDefault())
                 .setWritePackageBytes(1024 * 1024)// 设置每个包的长度
                 .setReaderProtocol(new NormalProtocol())// 设置自定义包头
                 .setReadByteOrder(ByteOrder.LITTLE_ENDIAN)// 设置低位在前 高位在后
-                .setPulseFrequency(2000)// 设置心跳间隔/毫秒
+                //.setPulseFrequency(200000000)// 设置心跳间隔/毫秒
                 .setPulseFeedLoseTimes(2)
                 .setReconnectionManager(new NoneReconnect())
                 .setCallbackThreadModeToken(new OkSocketOptions.ThreadModeToken() {
@@ -393,9 +377,7 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .build();
         getAppInfo().getConnectionManager().option(mOkOptions);
-        getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
         getAppInfo().getConnectionManager().registerReceiver(mSocketActionAdapter);
-
         synchronized (mLock) {
             if (!getAppInfo().getConnectionManager().isConnect()) {
                 getAppInfo().getConnectionManager().connect();
@@ -451,13 +433,15 @@ public class MainActivity extends AppCompatActivity {
                 int large_height = BytesUtils.bytesToInt(body, 4);
                 //
                 WindowFloatManager.getInstance().initScroll(large_width, large_height);
+                // 获取了大屏参数后开启控制监听
+                if (!PcController.isIsRunning()) PcController.start();
                 // 开始投屏
                 getAppInfo().getConnectionManager().send(new StartCastRequest());
                 WindowFloatManager.getInstance().setLineStartChangeListener(new WindowFloatManager.LineStartChangeListener() {
                     @Override
                     public void onChange(int left, int top, int right, int bottom) {
 
-                        //Log.d(TAG,WindowFloatManager.getInstance().isROTATION_0()+" Change left "+left+" top "+top+" right "+right+" bottom "+bottom);
+                        //Log.d(TAG,WindowFloatManager.getAppContext().isROTATION_0()+" Change left "+left+" top "+top+" right "+right+" bottom "+bottom);
                         // 发送选中区域
                         getAppInfo().getConnectionManager().send(new SelectRectResponse(left, top, right, bottom));
                     }
@@ -469,7 +453,10 @@ public class MainActivity extends AppCompatActivity {
                         getAppInfo().getConnectionManager().send(new SelectRectResponse(left, top, right, bottom));
                     }
                 });
-
+                break;
+            case Common.FLAG_PC_SCREEN_MOVE_EVENT:
+                // pc
+                PcController.offer(body);
                 break;
             default:
                 break;
@@ -479,7 +466,7 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onStart() {
         super.onStart();
-        Log.d(TAG, "MainActivity onStart");
+        Log.d(TAG, "CastActivity onStart");
         getAppInfo().setActivityRunning(true);
     }
 
@@ -523,6 +510,9 @@ public class MainActivity extends AppCompatActivity {
                 EventBus.getDefault().removeStickyEvent(CastMessage.class);
                 EventBus.getDefault().post(new CastMessage(MESSAGE_ACTION_STREAMING_STOP));
                 break;
+//            case MESSAGE_ACTION_RELEASE:
+//                release();
+//                break;
         }
     }
 
@@ -586,7 +576,6 @@ public class MainActivity extends AppCompatActivity {
                 mResultCode = resultCode;
                 mResultData = data;
                 startRecorderScreen();
-
                 break;
             default:
                 Log.e(TAG, "Unknown request code: " + requestCode);
@@ -614,7 +603,8 @@ public class MainActivity extends AppCompatActivity {
 
     @NeedsPermission({Manifest.permission.SYSTEM_ALERT_WINDOW})
     void showSystemWindow() {
-        //WindowFloatManager.getInstance().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
+        //WindowFloatManager.getAppContext().setResource(new int[]{R.mipmap.ic_res,R.mipmap.ic_pen,R.mipmap.ic_res,R.mipmap.ic_pen});
+        Log.e(TAG,"showSystemWindow");
         WindowFloatManager.getInstance().showFloatMenus();
         // 回到Home界面
         onBackPressed();
@@ -638,20 +628,22 @@ public class MainActivity extends AppCompatActivity {
 
     @Override
     public void onBackPressed() {
-//        Intent intent = new Intent(Intent.ACTION_MAIN,null);
-//        intent.addCategory(Intent.CATEGORY_HOME);
-//        startActivity(intent);
+        this.moveTaskToBack(true);
+    }
 
-        MainActivity.this.moveTaskToBack(true);
+    private void release() {
+        getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
+        getAppInfo().getConnectionManager().disconnect();
+        CastWaiter.getInstance().stop();
+        PcController.stop();
+        isRelease = true;
     }
 
     @Override
     protected void onDestroy() {
-        Log.e(TAG,"onDestroy");
-        getAppInfo().setActivityRunning(false);
-        EventBus.getDefault().unregister(this);
-        unregisterReceiver(mReceiver);
-        getAppInfo().getConnectionManager().unRegisterReceiver(mSocketActionAdapter);
         super.onDestroy();
+        release();
+        unregisterReceiver(mReceiver);
+        EventBus.getDefault().unregister(this);
     }
 }

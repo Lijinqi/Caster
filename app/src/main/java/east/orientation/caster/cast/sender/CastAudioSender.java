@@ -13,7 +13,6 @@ import static east.orientation.caster.CastApplication.getAppInfo;
 
 public class CastAudioSender {
     private static final String TAG = "CastFrameSender";
-    private static Object mLock = new Object();
     private static SendThread mSendThread;
     private static volatile boolean isRunning;
 
@@ -26,21 +25,18 @@ public class CastAudioSender {
                 byte[] audioStream;
                 try {
                     audioStream = getAppInfo().getAudioStream().take();
-
-                    if (audioStream != null && getAppInfo().getConnectionManager() != null) {
-                        // 发送audio数据
-                        getAppInfo().getConnectionManager().send(new AudioCastRequest(audioStream));
-                        //Log.d(TAG,"audio send:"+audioStream.length);
-                    }
+                    // 发送audio数据
+                    getAppInfo().getConnectionManager().send(new AudioCastRequest(audioStream));
+                    //Log.d(TAG,"audio send:"+audioStream.length);
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             }
         }
     }
 
     public static void start() {
-        synchronized (mLock) {
+        synchronized (CastAudioSender.class) {
             mSendThread = new SendThread();
             mSendThread.start();
             isRunning = true;
@@ -48,7 +44,7 @@ public class CastAudioSender {
     }
 
     public static void stop() {
-        synchronized (mLock) {
+        synchronized (CastAudioSender.class) {
             isRunning = false;
             if (mSendThread != null)
                 mSendThread.interrupt();

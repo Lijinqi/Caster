@@ -67,14 +67,24 @@ public class ScreenRecorder {
         MediaFormat mediaFormat = MediaFormat.createVideoFormat(MediaFormat.MIMETYPE_VIDEO_AVC, VideoConfig.RESOLUTION_OPTIONS[0][mIndexSize], VideoConfig.RESOLUTION_OPTIONS[1][mIndexSize]);
         mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, VideoConfig.BITRATE_OPTIONS[mIndexBitrate]);
         mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, VideoConfig.FPS_OPTIONS[mIndexFps]);
-
         mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, VideoConfig.DEFAULT_I_FRAME_INTERVAL);
         // 当画面静止时,重复最后一帧
         // https://stackoverflow.com/questions/36578660/android-mediaformatkey-repeat-previous-frame-after-setting
-        mediaFormat.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, (VideoConfig.DEFAULT_I_FRAME_INTERVAL * 2000 * 1000) / VideoConfig.FPS_OPTIONS[mIndexFps]);
-        mediaFormat.setInteger(MediaFormat.KEY_BITRATE_MODE, MediaCodecInfo.EncoderCapabilities.BITRATE_MODE_CBR);
+        mediaFormat.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, (6000 * 1000) / VideoConfig.FPS_OPTIONS[mIndexFps]);
+        mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+
+//        MediaFormat mediaFormat = new MediaFormat();
+//        mediaFormat.setString(MediaFormat.KEY_MIME, "video/avc");
+//        mediaFormat.setInteger(MediaFormat.KEY_BIT_RATE, VideoConfig.BITRATE_OPTIONS[0]);
+//        mediaFormat.setInteger(MediaFormat.KEY_FRAME_RATE, 60);
+//        mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
+//        mediaFormat.setInteger(MediaFormat.KEY_I_FRAME_INTERVAL, 10);
+//        // display the very first frame, and recover from bad quality when no new frames
+//        mediaFormat.setLong(MediaFormat.KEY_REPEAT_PREVIOUS_FRAME_AFTER, 1_000_000 * 6 / 60);
+//        mediaFormat.setInteger(MediaFormat.KEY_WIDTH, 1200);
+//        mediaFormat.setInteger(MediaFormat.KEY_HEIGHT, 1920);
+
         try {
-            mediaFormat.setInteger(MediaFormat.KEY_COLOR_FORMAT, MediaCodecInfo.CodecCapabilities.COLOR_FormatSurface);
             mVideoCodec = MediaCodec.createEncoderByType(MediaFormat.MIMETYPE_VIDEO_AVC);
             mVideoCodec.setCallback(new MediaCodec.Callback() {
                 @Override
@@ -96,8 +106,8 @@ public class ScreenRecorder {
                         System.arraycopy(pps, 0, b, sps.length, pps.length);
                         outputBuffer.get(b, sps.length + pps.length, info.size);
 
-                        byte[] frame = new byte[info.size];
-                        System.arraycopy(b, sps.length + pps.length, frame, 0, info.size);
+//                        byte[] frame = new byte[info.size];
+//                        System.arraycopy(b, sps.length + pps.length, frame, 0, info.size);
 
                         //Log.e(TAG,"录屏 .."+b.length+" == is key ");
                         // 添加数据到队列
@@ -137,8 +147,10 @@ public class ScreenRecorder {
         }
         DisplayManager displayManager = (DisplayManager) getAppContext().getSystemService(Context.DISPLAY_SERVICE);
 
-        mVirtualDisplay = displayManager.createVirtualDisplay("Recording",VideoConfig.RESOLUTION_OPTIONS[0][mIndexSize],
-                VideoConfig.RESOLUTION_OPTIONS[1][mIndexSize], VideoConfig.DEFAULT_SCREEN_DPI,mInputSurface,DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC);
+        mVirtualDisplay = displayManager.createVirtualDisplay("cast_Recording",VideoConfig.RESOLUTION_OPTIONS[0][mIndexSize],
+                VideoConfig.RESOLUTION_OPTIONS[1][mIndexSize], VideoConfig.DEFAULT_SCREEN_DPI,mInputSurface,
+                DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC
+                        | DisplayManager.VIRTUAL_DISPLAY_FLAG_SECURE);
 //        mVirtualDisplay = mediaProjection.createVirtualDisplay("Recording Display", VideoConfig.RESOLUTION_OPTIONS[0][mIndexSize],
 //                VideoConfig.RESOLUTION_OPTIONS[1][mIndexSize], VideoConfig.DEFAULT_SCREEN_DPI, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC, mInputSurface, null, null);
 
@@ -172,7 +184,6 @@ public class ScreenRecorder {
             mediaProjection.stop();
             mediaProjection = null;
         }
-
         if (mVirtualDisplay != null) {
             mVirtualDisplay.release();
             mVirtualDisplay = null;

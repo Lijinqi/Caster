@@ -9,15 +9,15 @@ package east.orientation.caster.local;
 public class VideoConfig {
     public static final int REQUEST_CODE_SCREEN_CAPTURE = 0x10;
     public static final int DEFAULT_SCREEN_DPI = 160;
-    public static final int DEFAULT_I_FRAME_INTERVAL = 2;//1 seconds between I-frames
+    public static final int DEFAULT_I_FRAME_INTERVAL = 10;//1 seconds between I-frames
 
     // 屏幕宽高比
-    private static double px = 1920.0 / 1200.0;
+    public static double px = 1920.0 / 1200.0;
     // 分辨率
     public static final int[][] RESOLUTION_OPTIONS = {
 
-            {1080, 720, 540, 360},
-            {(int) (1080.0 * px), (int) (720.0 * px), (int) (540.0 * px), (int) (360.0 * px)}
+            {1200, 720, 480, 360},
+            {1920, (int) (720.0 * px), (int) (480.0 * px), (int) (360.0 * px)}
     };
 
     // 比特率

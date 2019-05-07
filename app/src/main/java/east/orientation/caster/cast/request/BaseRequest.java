@@ -29,23 +29,6 @@ public abstract class BaseRequest implements ISendable {
         byte[] data = getData();
         try {
             if (data != null) {
-//                if (flag == Common.FLAG_AUDIO_STREAM){
-//                    ByteBuffer bb = ByteBuffer.allocate(16 + data.length);
-//                    bb.order(ByteOrder.BIG_ENDIAN);
-//                    // 加入长度
-//                    bb.put(BytesUtils.intToBytes(12+data.length));
-//                    // 加入head
-//                    bb.put(head.getBytes());
-//                    // 加入flag
-//                    bb.put(BytesUtils.intToBytes(flag));
-//
-//                    bb.put(BytesUtils.intToBytes(Common.count++));
-//                    // 加入data
-//                    bb.put(data);
-//
-//                    return bb.array();
-//
-//                }else {
                 ByteBuffer bb = ByteBuffer.allocate(12 + data.length);
                 bb.order(ByteOrder.BIG_ENDIAN);
                 // 加入长度
@@ -56,10 +39,7 @@ public abstract class BaseRequest implements ISendable {
                 bb.put(BytesUtils.intToBytes(flag));
                 // 加入data
                 bb.put(data);
-
                 return bb.array();
-//                }
-
             }
         } catch (Exception e) {
             e.printStackTrace();

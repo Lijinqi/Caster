@@ -9,6 +9,7 @@ import android.content.res.Resources;
 import android.graphics.PixelFormat;
 import android.os.Binder;
 import android.os.Build;
+import android.os.SystemClock;
 import android.provider.Settings;
 import android.support.annotation.MainThread;
 import android.support.annotation.RequiresApi;
@@ -55,7 +56,7 @@ import static east.orientation.caster.local.Common.FLAG_SCREEN_ROTATION_1;
 public class WindowFloatManager {
     private static final String TAG = "WindowFloatManager";
 
-    enum CastModel {
+    public enum CastModel {
         Normal(0),
         Large(1);
 
@@ -75,10 +76,12 @@ public class WindowFloatManager {
     private static DisplayMetrics sDisplayMetrics;
     private static Context mContext;
 
-    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_cast_large, R.mipmap.ic_stu_screen, R.mipmap.ic_cast_all, R.mipmap.ic_setting/*, R.mipmap.ic_exit*/};
+    private static int[] DEFAULT_ICONS = new int[]{R.mipmap.ic_cast_large, R.mipmap.ic_stu_screen, R.mipmap.ic_cast_all, R.mipmap.ic_setting, R.mipmap.ic_exit};
     private int[] mIconsId;
 
     private double px;// 大屏 H / W
+    private int mLargeWidth;
+    private int mLargeHeight;
     private int mStatusBarHeight;
     private int mNavigationbarHeight;
 
@@ -88,6 +91,8 @@ public class WindowFloatManager {
 
     private boolean isInit;// 是否初始化
     private int mStartLine;// 起始位置
+    private int mScrollHeight;// 下滑的高度
+
     private LineStartChangeListener mLineStartChangeListener;
     //private View mLine;
     private WindowManager.LayoutParams mLineParams;
@@ -127,6 +132,27 @@ public class WindowFloatManager {
             sWindowManager.getDefaultDisplay().getMetrics(sDisplayMetrics);
         }
         return sDisplayMetrics;
+    }
+
+    public int getLargeWidth() {
+        return mLargeWidth;
+    }
+
+    public void setLargeWidth(int largeWidth) {
+        mLargeWidth = largeWidth;
+    }
+
+    public int getLargeHeight() {
+        return mLargeHeight;
+    }
+
+    public void setLargeHeight(int largeHeight) {
+        mLargeHeight = largeHeight;
+    }
+
+    public int getScrollHeight() {
+
+        return mScrollHeight;
     }
 
     /**
@@ -186,8 +212,11 @@ public class WindowFloatManager {
         showOrHideScrollView(false);
     }
 
-    public void initScroll(int large_width, int large_height) {
+    private long now;
+    public void initScroll(int largeWidth,int largeHeight) {
         isPort = false;
+        mLargeWidth = largeWidth;
+        mLargeHeight = largeHeight;
 //        if (mLine != null){
 //            if (mLine.isAttachedToWindow())
 //                sWindowManager.removeView(mLine);
@@ -196,7 +225,7 @@ public class WindowFloatManager {
 //            if (mSeekBar.isAttachedToWindow())
 //                sWindowManager.removeView(mSeekBar);
 //        }
-        px = (double) large_height / (double) large_width;
+        px = (double) mLargeHeight / (double) mLargeWidth;
         int indexSize = SharePreferenceUtil.get(getAppContext(), Common.KEY_SIZE, 0);
         mScreenWidth = VideoConfig.RESOLUTION_OPTIONS[0][indexSize];
         mScreenHeight = VideoConfig.RESOLUTION_OPTIONS[1][indexSize];
@@ -230,8 +259,9 @@ public class WindowFloatManager {
         mSeekBar.setOnSlideChangeListener(new PureVerticalSeekBar.OnSlideChangeListener() {
             @Override
             public void OnSlideChangeListener(View view, float progress) {
-                mLineParams.y = (int) ((sDisplayMetrics.heightPixels - mStartLine - mStatusBarHeight) * (progress / 100) + mStartLine);
+                mScrollHeight = (int) ((sDisplayMetrics.heightPixels + mNavigationbarHeight - sDisplayMetrics.widthPixels * px) * (progress / 100));
 
+                mLineParams.y = (int) ((sDisplayMetrics.heightPixels - mStartLine - mStatusBarHeight) * (progress / 100) + mStartLine);
                 int left, top, right, bottom;
                 left = 0;
                 right = mScreenWidth;
@@ -288,6 +318,7 @@ public class WindowFloatManager {
         }
     }
 
+    // 是否显示区域
     private boolean isPort;
 
     public void showOrHideScrollView(boolean isShow) {
@@ -328,7 +359,6 @@ public class WindowFloatManager {
      */
     public boolean isROTATION_0() {
         int rotation = sWindowManager.getDefaultDisplay().getRotation();
-        Log.d(TAG, "rotation " + rotation);
         if (ROTATION_0 == rotation || ROTATION_180 == rotation)
             return true;
         else
@@ -457,9 +487,13 @@ public class WindowFloatManager {
             mContext.startActivity(new Intent(mContext, SettingActivity.class).addFlags(Intent.FLAG_ACTIVITY_NEW_TASK));
         });
         // 退出
-//        subButtons[4].setOnClickListener(v -> {
-//            getAppContext().AppExit();
-//        });
+        subButtons[4].setOnClickListener(v -> {
+            getAppContext().AppExit();
+        });
+    }
+
+    public CastModel getCastModel() {
+        return mCastModel;
     }
 
     public static WindowManager.LayoutParams getDefaultSystemWindowParams() {

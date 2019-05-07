@@ -4,7 +4,7 @@
     <string-array name="screen_size">
         <item>1920×1080</item>
         <item>1280×720</item>
-        <item>960×540</item>
+        <item>960×480</item>
         <item>640×360</item>
     </string-array>
 

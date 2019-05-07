@@ -5,6 +5,7 @@ import android.support.annotation.Nullable;
 import android.support.v7.app.AlertDialog;
 import android.support.v7.app.AppCompatActivity;
 import android.text.TextUtils;
+import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.widget.EditText;
@@ -12,10 +13,13 @@ import android.widget.TextView;
 
 import org.greenrobot.eventbus.EventBus;
 
+import java.io.IOException;
+
 import de.hdodenhof.circleimageview.CircleImageView;
 import east.orientation.caster.R;
 import east.orientation.caster.evevtbus.ModeMessage;
 import east.orientation.caster.local.Common;
+import east.orientation.caster.util.RxShellTool;
 import east.orientation.caster.util.SharePreferenceUtil;
 import east.orientation.caster.util.ToastUtil;
 

@@ -293,7 +293,7 @@ public class CastScreenService extends Service {
         //stopForeground(true);
         mCastServiceHandler.obtainMessage(mCastServiceHandler.HANDLER_START_STREAMING).sendToTarget();
         startForeground(NOTIFICATION_STOP_STREAMING, getCustomNotification(NOTIFICATION_STOP_STREAMING));
-        if (mMediaProjection != null) mMediaProjection.registerCallback(mProjectionCallback, null);
+        //if (mMediaProjection != null) mMediaProjection.registerCallback(mProjectionCallback, null);
     }
 
     /**
@@ -313,7 +313,7 @@ public class CastScreenService extends Service {
         mCastServiceHandler.obtainMessage(CastServiceHandler.HANDLER_STOP_STREAMING).sendToTarget();
         startForeground(NOTIFICATION_START_STREAMING, getCustomNotification(NOTIFICATION_START_STREAMING));
         if (mMediaProjection != null) {
-            mMediaProjection.unregisterCallback(mProjectionCallback);
+            //mMediaProjection.unregisterCallback(mProjectionCallback);
             mMediaProjection.stop();
         }
         getAppInfo().getScreenVideoStream().clear();

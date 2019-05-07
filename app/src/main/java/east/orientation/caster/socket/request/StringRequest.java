@@ -2,6 +2,7 @@ package east.orientation.caster.socket.request;
 
 
 import com.xuhao.didi.core.iocore.interfaces.ISendable;
+import com.xuhao.didi.socket.common.interfaces.utils.TextUtils;
 
 import java.io.UnsupportedEncodingException;
 import java.nio.ByteBuffer;

@@ -41,6 +41,7 @@ public class Common {
     public static final int FLAG_STOP_CAST = 0x2004;// 关闭投屏
     public static final int FLAG_VIDEO_STREAM = 0x2005;// 视频帧数据流
     public static final int FLAG_AUDIO_STREAM = 0x2006;// 音频数据流
+    public static final int FLAG_PICTURE_STREAM = 0x2015;
     public static final int FLAG_MP3_PARAM_REQUEST = 0x2007;// 大屏mp3参数请求
     public static final int FLAG_MP3_PARAM_RESPONSE = 0x2008;// mp3参数设置
     public static final int FLAG_SCREEN_CUT_SIZE_REQUEST = 0x2009;//请求大屏分辨率
@@ -48,6 +49,15 @@ public class Common {
     public static final int FLAG_SCREEN_CUT_SIZE_RESPONSE = 0x2011;//回复大屏  Rect坐标
     public static final int FLAG_SCREEN_ROTATION = 0x2012;//屏幕横竖参数
     public static final int FLAG_SCREEN_CAST_MODEL = 0x2014;//投屏模式 0，普通模式 1， 放大模式
+
+    public static final int FLAG_PC_SCREEN_MOVE_EVENT = 0x2020;// 大屏控制平板命令
+
+    public static final int TYPE_PC_MSG_MOVE = 0x200;// 移动
+    public static final int TYPE_PC_MSG_DOWN = 0x201;// down
+    public static final int TYPE_PC_MSG_UP = 0x202;//up
+
+    public static final int TYPE_MOUSE_LEFT = 1;//  左按键
+    public static final int TYPE_MOUSE_RIGHT = 2;// 右按键
 
     public static final int FLAG_SCREEN_ROTATION_1 = 1;
     public static final int FLAG_SCREEN_ROTATION_0 = 0;

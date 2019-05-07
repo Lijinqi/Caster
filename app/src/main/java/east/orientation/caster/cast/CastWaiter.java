@@ -71,7 +71,7 @@ public class CastWaiter {
                 while (networkInterfaces.hasMoreElements()) {
                     NetworkInterface iface = networkInterfaces.nextElement();
                     try {
-                        Log.e("@@", "interface - " + iface.getDisplayName());
+                        Log.i("@@", "interface - " + iface.getDisplayName());
                     } catch (Exception e) {
                     }
                 }
@@ -86,7 +86,7 @@ public class CastWaiter {
                 parserData(packet);
 
             } catch (Exception e) {
-                e.printStackTrace();
+                //e.printStackTrace();
 
                 Log.e("@@", "-receive err-" + e);
                 if (!isStop) {
@@ -130,7 +130,7 @@ public class CastWaiter {
             if (mSearchThread != null) return;
             mSearchThread = new SearchThread();
             mSearchThread.start();
-            Log.e("@@", "waiter start");
+            Log.i("@@", "waiter start");
         }
     }
 
@@ -150,7 +150,7 @@ public class CastWaiter {
             } catch (Exception e) {
                 e.printStackTrace();
             }
-            Log.e("@@", "waiter stop");
+            Log.i("@@", "waiter stop");
         }
     }
 

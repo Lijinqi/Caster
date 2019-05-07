@@ -1,7 +1,5 @@
 package east.orientation.caster.cast.sender;
 
-import android.util.Log;
-
 import east.orientation.caster.cast.request.VideoCastRequest;
 
 import static east.orientation.caster.CastApplication.getAppInfo;
@@ -12,7 +10,6 @@ import static east.orientation.caster.CastApplication.getAppInfo;
 
 public class CastFrameSender {
     private static final String TAG = "CastFrameSender";
-    private static Object mLock = new Object();
     private static SendThread mSendThread;
     private static volatile boolean isRunning;
 
@@ -26,20 +23,21 @@ public class CastFrameSender {
                     videoStream = getAppInfo().getScreenVideoStream().take();
 
                     if (getAppInfo().getConnectionManager() != null && getAppInfo().isStreamRunning()) {
-                        if (videoStream != null) {
-                            // 发送video数据
-                            getAppInfo().getConnectionManager().send(new VideoCastRequest(videoStream));
-                        }
+                        // 发送video数据
+                        //request.setPics(videoStream);
+
+                        getAppInfo().getConnectionManager().send(new VideoCastRequest(videoStream));
+
                     }
                 } catch (InterruptedException e) {
-                    e.printStackTrace();
+                    //e.printStackTrace();
                 }
             }
         }
     }
 
     public static void start() {
-        synchronized (mLock) {
+        synchronized (CastFrameSender.class) {
             mSendThread = new SendThread();
             mSendThread.start();
             isRunning = true;
@@ -47,7 +45,7 @@ public class CastFrameSender {
     }
 
     public static void stop() {
-        synchronized (mLock) {
+        synchronized (CastFrameSender.class) {
             isRunning = false;
             if (mSendThread != null)
                 mSendThread.interrupt();

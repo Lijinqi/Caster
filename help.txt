@@ -1,0 +1,60 @@
+
+安卓7.1删除系统文件
+1. adb root 
+2. adb disable-verity 
+3. adb reboot 重启设备 
+4. adb root 
+5. adb remount 
+再进文件夹删除。
+rm -rf Camera2
+
+
+xiaoxm@server:~/project/gsp60a/gsp60a$
+source build.sh
+
+mmm framework/base/service/
+
+adb push Y:/project/gsp60a/gsp60a/out/target/product/rk3368_32/system/framework/services.jar system/framework/
+
+adb shell
+
+
+
+adb root
+adb remount
+
+adb push xxx /system/.../
+
+adb reboot 
+
+
+/// 发布新版本
+make -j8
+./mkiamge.sh
+
+cd rockdev
+./mkupdate.sh
+
+
+cd /home/share/01项目/06\ GSP60/01\ 塑料版本/04\ 软件资料/01发布版/Android5.1/monitor
+mkdir xx目录
+
+cp update.img /home/share/01项目/06\ GSP60/01\ 塑料版本/04\ 软件资料/01发布版/Android5.1/monitor/xx目录
+
+
+//pad commond
+
+1）强制安装apk
+pm install --root 
+
+2)强制卸载
+pm uninstall --root
+
+
+3)usb调试
+开启：1972.0!e^11
+关闭：1972.0!e^12
+
+4)usb存储
+开启：1972.0!e^21
+关闭：1972.0!e^22
